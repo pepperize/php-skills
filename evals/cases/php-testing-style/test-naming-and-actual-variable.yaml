@@ -1,0 +1,32 @@
+- description: php-testing-style:test-naming-and-actual-variable
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-testing-style/SKILL.md
+    code: |
+      use PHPUnit\Framework\Attributes\Test;
+      use PHPUnit\Framework\TestCase;
+
+      final class CreateMarketRequestTest extends TestCase
+      {
+          #[Test]
+          public function testValidation(): void
+          {
+              $result = (new CreateMarketRequest('XX'))->hasValidRegionCode();
+
+              self::assertFalse($result);
+          }
+      }
+  assert:
+    - type: icontains
+      value: testValidation
+    - type: regex
+      value: 'given[A-Za-z0-9_]*_should[A-Za-z0-9_]*'
+    - type: regex
+      value: '\$actual\b'
+    - type: llm-rubric
+      value: 'Pass only if the review flags vague test naming, recommends given{Condition}_should{ExpectedResult}, and says the observed result should be named $actual.'
+  metadata:
+    id: php-testing-style:test-naming-and-actual-variable
+    skill: php-testing-style
+    kind: review

@@ -1,0 +1,41 @@
+- description: php-readable-code:no-test-only-production-code
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    code: |
+      final class InvoicePublisher
+      {
+          private bool $skipEmailDelivery = false;
+
+          public function __construct(private EmailGateway $emailGateway)
+          {
+          }
+
+          public function enableTestMode(): void
+          {
+              $this->skipEmailDelivery = true;
+          }
+
+          public function publish(Invoice $invoice): void
+          {
+              if ($this->skipEmailDelivery) {
+                  return;
+              }
+
+              $this->emailGateway->send($invoice);
+          }
+      }
+  assert:
+    - type: regex
+      value: '[Tt]est-only|only\s+for\s+tests|[Tt]est mode'
+    - type: regex
+      value: '[Pp]roduction\s+(api|method|code|surface|behavior)'
+    - type: regex
+      value: '[Tt]est setup|construct collaborators|[Mm]ock|injection|fake|stub'
+    - type: llm-rubric
+      value: 'Pass only if the review flags the public production test hook, explains that production API should not exist only for tests, and proposes improving test setup or using an appropriate narrow seam instead of adding public test-only API.'
+  metadata:
+    id: php-readable-code:no-test-only-production-code
+    skill: php-readable-code
+    kind: review

@@ -1,0 +1,41 @@
+- description: php-testing-style:validation-data-provider
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-testing-style/SKILL.md
+    task: |
+      Write a focused PHPUnit test for CreateMarketRequest::hasValidRegionCode().
+      Invalid region codes are null, an empty string, "XX", and "INVALID".
+      Use a data provider when suitable and keep setup local to the test.
+    project_instructions: |
+      The project uses PHPUnit. It does not use Pest or another assertion library.
+    code: |
+      final readonly class CreateMarketRequest
+      {
+          public function __construct(public ?string $regionCode)
+          {
+          }
+
+          public function hasValidRegionCode(): bool
+          {
+              return $this->regionCode !== null
+                  && preg_match('/^(DE|FR|IT)$/', $this->regionCode) === 1;
+          }
+      }
+  assert:
+    - type: regex
+      value: '#\[DataProvider\(|@dataProvider\b'
+    - type: regex
+      value: 'givenInvalidRegionCode_should[A-Za-z0-9_]+'
+    - type: regex
+      value: '\$actual\s*='
+    - type: regex
+      value: '(self|static)::assertFalse\s*\(|\$this->assertFalse\s*\('
+    - type: not-regex
+      value: 'function\s+setUp\s*\('
+    - type: not-regex
+      value: '(^|\n)\s*(it|test)\s*\('
+  metadata:
+    id: php-testing-style:validation-data-provider
+    skill: php-testing-style
+    kind: apply

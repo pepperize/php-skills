@@ -1,0 +1,42 @@
+- description: php-domain-clarification:ambiguous-domain-scope
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-domain-clarification/SKILL.md
+    task: |
+      Implement product visibility filtering. When customerGroupId and salesChannel are present,
+      only return products visible for that customer group. tenantId is already present on the request.
+      Make the service change now.
+    code: |
+      final readonly class ProductSearchRequest
+      {
+          public function __construct(
+              public string $tenantId,
+              public ?string $customerGroupId,
+              public ?string $salesChannel,
+          ) {
+          }
+      }
+
+      final class ProductSearchService
+      {
+          public function search(ProductSearchRequest $request): array
+          {
+              return $this->productRepository->findByTenantId($request->tenantId);
+          }
+      }
+  assert:
+    - type: icontains
+      value: tenant
+    - type: regex
+      value: '[Cc]ustomer ?[Gg]roup'
+    - type: regex
+      value: '[Ss]ales ?[Cc]hannel'
+    - type: regex
+      value: '\?'
+    - type: llm-rubric
+      value: 'Pass only if the answer asks concrete clarification questions before coding, specifically probes tenant/customer group/sales channel scoping semantics, and does not implement speculative business logic.'
+  metadata:
+    id: php-domain-clarification:ambiguous-domain-scope
+    skill: php-domain-clarification
+    kind: apply

@@ -1,0 +1,30 @@
+- description: php-database-migrations:applied-migration-integrity
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-database-migrations/SKILL.md
+    project_instructions: |
+      This is a Laravel application. It already uses Laravel migrations.
+    task: |
+      Add a nullable short_description column to products.
+      2026_04_01_090000_create_products_table.php is already applied in production.
+      Recommend the migration filename and verification. Use a concrete example filename.
+      Also say whether to introduce Doctrine Migrations or Phinx for this change, and whether a
+      separate code-only mapping change with no database schema change needs a migration.
+  assert:
+    - type: regex
+      value: '20[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]{6}_[a-z0-9_]+\.php'
+    - type: regex
+      value: '([Dd]o not|[Dd]on.t|[Mm]ust not|[Ss]hould not)\s+edit.*already[- ]applied|already[- ]applied.*([Dd]o not|[Dd]on.t|[Mm]ust not|[Ss]hould not)\s+edit'
+    - type: regex
+      value: 'artisan\s+migrate|migration\s+(status|validation)|application\s+(startup|boot)|framework\s+boot'
+    - type: regex
+      value: '([Nn]o|[Dd]o not|[Dd]on.t|[Ss]hould not).{0,100}(Doctrine|Phinx)|([Dd]octrine|Phinx).{0,100}([Nn]o|[Dd]o not|[Dd]on.t|[Ss]hould not)'
+    - type: regex
+      value: '([Nn]o|[Dd]o not|[Dd]on.t|[Ss]hould not).{0,80}migration.{0,140}(no database schema change|no schema change|code-only)|([Cc]ode-only|no database schema change|no schema change).{0,140}([Nn]o|[Dd]o not|[Dd]on.t|[Ss]hould not).{0,80}migration'
+    - type: llm-rubric
+      value: 'Pass only if the answer adds a new timestamp-named Laravel migration instead of editing the applied migration, mentions migration validation/status and application boot verification, refuses to add Doctrine Migrations or Phinx, and says not to create a migration when there is no schema change.'
+  metadata:
+    id: php-database-migrations:applied-migration-integrity
+    skill: php-database-migrations
+    kind: apply

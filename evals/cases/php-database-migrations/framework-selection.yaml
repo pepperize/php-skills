@@ -1,0 +1,25 @@
+- description: php-database-migrations:framework-selection
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-database-migrations/SKILL.md
+    task: |
+      Choose the migration system for each project without introducing a second migration framework:
+      1. A Laravel application that already has Laravel migrations.
+      2. A Symfony application using Doctrine and Doctrine Migrations.
+      3. A framework-neutral PHP application with no existing migration system.
+  assert:
+    - type: icontains
+      value: Laravel migrations
+    - type: icontains
+      value: Doctrine Migrations
+    - type: icontains
+      value: Phinx
+    - type: regex
+      value: '[Dd]o not introduce|[Dd]o not add|[Aa]void introducing|[Aa]void adding|[Ee]xisting migration'
+    - type: llm-rubric
+      value: 'Pass only if the answer chooses Laravel migrations for the Laravel project, Doctrine Migrations for the Symfony/Doctrine project, and Phinx only for the framework-neutral project with no existing migration system, while explicitly avoiding an additional migration framework.'
+  metadata:
+    id: php-database-migrations:framework-selection
+    skill: php-database-migrations
+    kind: apply
