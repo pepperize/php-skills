@@ -11,6 +11,7 @@ $skills = @(
     "php-clean-architecture",
     "php-ddd-architecture",
     "php-readable-code",
+    "php-templating",
     "php-testing-style",
     "php-solid-review",
     "php-agent-instructions",

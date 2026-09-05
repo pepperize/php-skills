@@ -1,0 +1,26 @@
+- description: php-templating:slim-engine-selection
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-templating/SKILL.md
+    project_instructions: |
+      This is a Slim 4 website maintained by PHP developers. Its pages need a
+      shared layout and reusable navigation and contact partials. Dynamic data
+      appears only in HTML text and ordinary quoted attributes.
+    task: |
+      Choose a template engine and escaping approach. We want to step through
+      the actual template source with Xdebug without template compilation.
+      Explain the choice and show how a page reuses a contact partial.
+  assert:
+    - type: contains
+      value: slim/php-view
+    - type: contains
+      value: htmlspecialchars
+    - type: regex
+      value: '\$this->fetch\s*\('
+    - type: llm-rubric
+      value: 'Pass only if the answer chooses slim/php-view with native PHP templates, built-in layouts and partials, and an explicit html() helper based on htmlspecialchars. It must preserve direct source debugging and avoid recommending a compiled template engine, a custom rendering framework, or an additional escaping library for these HTML-only requirements. Mentioning alternatives to explain why they are unnecessary is allowed.'
+  metadata:
+    id: php-templating:slim-engine-selection
+    skill: php-templating
+    kind: apply

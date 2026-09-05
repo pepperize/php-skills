@@ -1,0 +1,35 @@
+- description: php-templating:source-text-pluralization
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-templating/SKILL.md
+    project_instructions: |
+      The website uses native PHP templates and supports English, German,
+      Dutch, Danish, and Polish. A translator with ICU MessageFormat support
+      already exists. The shared html() helper is available.
+    task: |
+      Replace the greeting and child-count output with translations following
+      the skill. Show the template helper contract, the HTML template calls,
+      and a plain-text email greeting. Explain how plural rules work for Polish
+      and how consecutive German, Polish, and German renders select their locale
+      without carrying locale state across renders. Do not build a translator.
+    code: |
+      <p>Hello <?= $name ?></p>
+      <p><?= $childCount === 1 ? 'One child' : $childCount . ' children' ?></p>
+  assert:
+    - type: regex
+      value: '_t\s*\('
+    - type: regex
+      value: '_t\s*\(\s*[\x27\x22]Hello\s*\{name\}'
+    - type: regex
+      value: '\{\s*count\s*,\s*plural\s*,'
+    - type: regex
+      value: '[\x27\x22]count[\x27\x22]\s*=>\s*\$childCount'
+    - type: regex
+      value: 'html\s*\('
+    - type: llm-rubric
+      value: 'Pass only if source-language text (including the complete ICU plural pattern) is used as translation keys, _t() accepts source text and optional named parameters, and dynamic name/count values are passed as parameters rather than concatenated translated fragments. Pluralization must use ICU locale rules, allowing Polish categories such as few and many rather than a singular/plural boolean. _t() must return unescaped text; HTML output is escaped at the output location and the plain-text greeting is not HTML-escaped. Locale must be supplied or bound for each render so German/Polish/German renders are independent. Preserve the requested _t() spelling and reuse the existing translator.'
+  metadata:
+    id: php-templating:source-text-pluralization
+    skill: php-templating
+    kind: apply

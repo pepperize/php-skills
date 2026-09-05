@@ -1,0 +1,36 @@
+- description: php-templating:html-output-escaping
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-templating/SKILL.md
+    task: |
+      Implement the shared HTML escaping helper and update these two independent
+      PHP templates. $name is a string that may contain quotes, ampersands, or
+      markup. Preserve the name as supplied in the plain-text email. Briefly
+      explain whether the helper also covers JavaScript, CSS, and URL contexts.
+    code: |
+      // profile.php (HTML)
+      <h1><?= $name ?></h1>
+      <input name="name" value="<?= $name ?>">
+
+      // confirmation.txt.php (plain-text email)
+      Hello <?= $name ?>
+  assert:
+    - type: regex
+      value: 'function\s+html\s*\(\s*string\s+\$\w+\s*\)\s*:\s*string'
+    - type: contains
+      value: htmlspecialchars
+    - type: contains
+      value: ENT_QUOTES
+    - type: contains
+      value: ENT_SUBSTITUTE
+    - type: contains
+      value: UTF-8
+    - type: regex
+      value: 'html\s*\(\s*\$name\s*\)'
+    - type: llm-rubric
+      value: 'Pass only if html() uses htmlspecialchars with ENT_QUOTES | ENT_SUBSTITUTE and UTF-8, both HTML outputs escape the name at the output location within a quoted attribute where applicable, and the plain-text email preserves the original name without HTML escaping. The answer must not claim automatic escaping or universal safety for JavaScript, CSS, or URLs; those contexts need separate handling. No additional escaping dependency is needed.'
+  metadata:
+    id: php-templating:html-output-escaping
+    skill: php-templating
+    kind: apply
