@@ -1,0 +1,65 @@
+- description: php-ddd-architecture:domain-repository-boundary
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-ddd-architecture/SKILL.md
+    project_instructions: |
+      This project uses Domain-Driven Design. Domain code lives under Domain,
+      application controllers under App, and technical adapters under Infrastructure.
+      Privacy rendering and inquiry delivery must use the same forwarding-recipient concept.
+    task: |
+      Refactor the providers into repositories. LegalOperatorProvider returns one legal operator,
+      PrivacyPolicyRecipientProvider returns the recipients used for inquiry forwarding, and
+      PrivacyPolicyVersionProvider returns one version. The values currently come from source code,
+      memory, and a file. Show the repository interfaces, their placement, method names, absence
+      behavior, implementation placement, and application dependency direction.
+    code: |
+      namespace Example\App\Frontend\PrivacyPolicy;
+
+      interface LegalOperatorProvider
+      {
+          public function operator(): LegalOperator;
+      }
+
+      interface PrivacyPolicyRecipientProvider
+      {
+          public function activeRecipients(): array;
+      }
+
+      interface PrivacyPolicyVersionProvider
+      {
+          public function version(): PrivacyPolicyVersion;
+      }
+  assert:
+    - type: icontains
+      value: Domain
+    - type: contains
+      value: LegalOperatorRepository
+    - type: contains
+      value: ForwardingRecipientRepository
+    - type: contains
+      value: PrivacyPolicyVersionRepository
+    - type: regex
+      value: 'function\s+find\s*\('
+    - type: regex
+      value: 'function\s+findAll\s*\('
+    - type: contains
+      value: NotFoundException
+    - type: regex
+      value: 'throw\s+new\s+NotFoundException'
+    - type: regex
+      value: 'return\s+\[\s*\]\s*;'
+    - type: icontains
+      value: Infrastructure
+    - type: not-regex
+      value: 'interface\s+\w*Provider\b'
+    - type: not-regex
+      value: 'function\s+(operator|activeRecipients|version|findLegalOperator|loadPrivacyPolicyVersionFromFile)\s*\('
+    - type: not-regex
+      value: '\?\s*(LegalOperator|PrivacyPolicyVersion)\b'
+    - type: llm-rubric
+      value: 'Pass only if the result places repository interfaces and returned models in their owning Domain modules, renames the shared privacy recipient to the forwarding-recipient domain concept, places storage-specific implementations in Infrastructure, makes application code depend on domain interfaces, uses find() plus NotFoundException for singular objects, and uses findAll() plus an empty list for collections. Fail if storage type determines whether the abstraction is called a repository, if a repository remains under App/Frontend, or if Domain depends on App or Infrastructure.'
+  metadata:
+    id: php-ddd-architecture:domain-repository-boundary
+    skill: php-ddd-architecture
+    kind: apply

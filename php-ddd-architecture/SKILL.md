@@ -1,6 +1,6 @@
 ---
 name: php-ddd-architecture
-description: Use for PHP projects whose AGENTS.md, CLAUDE.md, or equivalent explicitly states DDD or Domain-Driven Design, especially domain/application/infrastructure boundaries, framework configuration placement, and web boundary naming.
+description: Use for PHP projects whose AGENTS.md, CLAUDE.md, or equivalent explicitly states DDD or Domain-Driven Design, especially repository contracts, domain/application/infrastructure boundaries, framework configuration placement, and web boundary naming.
 ---
 
 # PHP DDD Architecture
@@ -16,6 +16,30 @@ Follow the DDD rules in the project's own instruction files and domain docs.
 - Preserve clear boundaries and responsibilities between domain concepts, application services, and infrastructure concerns.
 - Ask for clarification before changing aggregates, entities, value objects, repositories, domain services, bounded-context language, or domain invariants when rules are missing or unclear.
 - Prefer anemic domain models with behavior primarily in services unless there is a strong reason to keep logic on the entity itself.
+
+## Repository Contracts
+
+When adding, reviewing, or refactoring a repository, read [references/repositories.md](references/repositories.md) before editing.
+
+- Treat an abstraction that retrieves domain objects as a repository regardless of whether its data comes from a database, file, source-controlled data, memory, or external service.
+- Define the repository interface in the domain module that owns the returned model. Keep the returned model in that domain module as well.
+- Domain repository contracts and models must not depend on application, frontend, framework, transport, persistence, or infrastructure types.
+- Put repository implementations in infrastructure. Implementation names may identify their storage mechanism, such as `FilePrivacyPolicyVersionRepository` or `InMemoryForwardingRecipientRepository`.
+- Application services and controllers depend on the domain repository interface. Framework composition binds that interface to its infrastructure implementation.
+- Use the ubiquitous domain name. Do not introduce a presentation-owned duplicate when several workflows use the same concept.
+- Do not name a domain-object retrieval abstraction `Provider`, `Loader`, or `Reader`. Those names remain valid for collaborators whose responsibility is configuration binding, serialization, transport, or another non-repository concern.
+- Expose only operations required by callers. Do not introduce a generic base repository or speculative `save`, `remove`, or query methods.
+
+Use these retrieval and absence conventions:
+
+- A repository operation returning one object is named `find(...)` and returns the declared object type.
+- When the requested object does not exist, `find(...)` throws the domain `NotFoundException`; it does not return `null`.
+- A repository operation returning a list is named `findAll(...)` and documents its element type as a list.
+- When no matching objects exist, `findAll(...)` returns `[]`; it does not throw `NotFoundException` merely because the result is empty.
+- Do not repeat the repository subject in method names. Prefer `LegalOperatorRepository::find()` over `LegalOperatorRepository::findLegalOperator()`.
+- Report absence as `NotFoundException`. Keep failures reading or decoding an existing data source as technical exceptions.
+
+Before finalizing, verify that repository interfaces and their returned types are owned by the domain, implementations are owned by infrastructure, and nothing under the domain namespace depends outward on application or infrastructure namespaces.
 
 ## Framework Configuration
 

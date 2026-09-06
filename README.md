@@ -13,7 +13,7 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 - `php-application-security`: application security guidance for external-input validation and regex safety.
 - `php-domain-clarification`: clarification workflow before domain-sensitive implementation changes.
 - `php-clean-architecture`: Clean Architecture guidance for PHP projects. This skill is guarded and should only be used when the project's main instruction file explicitly states Clean Architecture.
-- `php-ddd-architecture`: DDD guidance for PHP projects, including framework configuration placement and web boundary naming. This skill is guarded and should only be used when the project's main instruction file explicitly states DDD or Domain-Driven Design.
+- `php-ddd-architecture`: DDD guidance for PHP projects, including repository ownership and contracts, framework configuration placement, and web boundary naming. This skill is guarded and should only be used when the project's main instruction file explicitly states DDD or Domain-Driven Design.
 - `php-database-migrations`: migration creation, framework selection, timestamp naming, and applied-migration integrity conventions for PHP projects.
 
 ## Architecture Skill Activation
