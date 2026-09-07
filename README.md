@@ -5,7 +5,7 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 ## Skills
 
 - `php-readable-code`: readable PHP code, focused responsibilities, factory naming, nullable collection handling, and avoiding hard-to-read nested method calls.
-- `php-templating`: template engine selection, layouts and partials, HTML escaping, and template translation with source-text keys, `_t()`, and ICU pluralization.
+- `php-templating`: typed page ViewModels, template engine selection, layouts and partials, HTML escaping, and template translation with source-text keys, `_t()`, and ICU pluralization.
 - `php-testing-style`: PHPUnit unit and integration testing conventions, London-style defaults, test layout, naming, and verification scope.
 - `php-solid-review`: SOLID, responsibility-boundary, code-smell, and pragmatic OO design review for PHP production code. Testing guidance stays delegated to `php-testing-style`.
 - `php-agent-instructions`: installs or updates project-level `AGENTS.md`/`CLAUDE.md` instructions for PHP skill self-review.
@@ -13,7 +13,7 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 - `php-application-security`: application security guidance for external-input validation and regex safety.
 - `php-domain-clarification`: clarification workflow before domain-sensitive implementation changes.
 - `php-clean-architecture`: Clean Architecture guidance for PHP projects. This skill is guarded and should only be used when the project's main instruction file explicitly states Clean Architecture.
-- `php-ddd-architecture`: DDD guidance for PHP projects, including repository ownership and contracts, framework configuration placement, and web boundary naming. This skill is guarded and should only be used when the project's main instruction file explicitly states DDD or Domain-Driven Design.
+- `php-ddd-architecture`: DDD guidance for PHP projects, including repository ownership and contracts, framework configuration placement, web boundary naming, and Slim route URL generation. This skill is guarded and should only be used when the project's main instruction file explicitly states DDD or Domain-Driven Design.
 - `php-database-migrations`: migration creation, framework selection, timestamp naming, and applied-migration integrity conventions for PHP projects.
 
 ## Architecture Skill Activation

@@ -1,0 +1,55 @@
+- description: php-ddd-architecture:controller-view-service-boundary
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-ddd-architecture/SKILL.md
+    project_instructions: |
+      This project uses Domain-Driven Design. Domain code lives under Domain,
+      frontend HTTP code under App/Frontend, and technical adapters under Infrastructure.
+    task: |
+      Refactor this server-rendered controller so it no longer accesses repositories directly.
+      The rendered data must not expose domain objects. Show the resulting controller,
+      application service, typed content and page ViewModels, and final render
+      call. Repository access is potentially costly. The controller owns
+      request-specific metadata and route-derived navigation URLs.
+    code: |
+      final class PrivacyPolicyController
+      {
+          public function __construct(
+              private PhpRenderer $templates,
+              private LegalOperatorRepository $legalOperatorRepository,
+              private ForwardingRecipientRepository $recipientRepository,
+          ) {
+          }
+
+          public function getPrivacyPolicy(
+              ServerRequestInterface $request,
+              ResponseInterface $response,
+          ): ResponseInterface {
+              $operator = $this->legalOperatorRepository->find();
+
+              return $this->templates->render($response, 'privacy-policy.php', [
+                  'operator' => $operator,
+                  'recipients' => $this->recipientRepository->findAll(),
+              ]);
+          }
+      }
+  assert:
+    - type: contains
+      value: PrivacyPolicyViewService
+    - type: contains
+      value: PrivacyPolicyContentViewModel
+    - type: regex
+      value: 'function\s+fetch\w*\s*\(\s*\)\s*:\s*PrivacyPolicyContentViewModel'
+    - type: regex
+      value: 'private\s+PrivacyPolicyViewService\s+\$\w+'
+    - type: contains
+      value: PrivacyPolicyPageViewModel
+    - type: regex
+      value: '\[''page''\s*=>\s*\$page\]'
+    - type: llm-rubric
+      value: 'Pass only if repository dependencies and domain-to-view mapping move into a frontend application service, the service returns a typed content ViewModel containing no domain objects, and the controller depends on that service while retaining HTTP, routing, full-page ViewModel composition, and rendering concerns. The service must receive no HTTP or framework objects. Fail if the controller still depends directly on a repository, passes domain entities to the template, flattens the page into render keys, or calls presentation data View or ViewData.'
+  metadata:
+    id: php-ddd-architecture:controller-view-service-boundary
+    skill: php-ddd-architecture
+    kind: apply

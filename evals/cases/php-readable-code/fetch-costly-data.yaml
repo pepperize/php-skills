@@ -1,0 +1,31 @@
+- description: php-readable-code:fetch-costly-data
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    code: |
+      final class PrivacyPolicyViewService
+      {
+          public function __construct(
+              private LegalOperatorRepository $legalOperatorRepository,
+          ) {
+          }
+
+          public function getViewData(): PrivacyPolicyViewData
+          {
+              $operator = $this->legalOperatorRepository->find();
+
+              return new PrivacyPolicyViewData($operator->name);
+          }
+      }
+  assert:
+    - type: contains
+      value: fetchViewData
+    - type: regex
+      value: '[Rr]epository|I/O|costly|expensive'
+    - type: llm-rubric
+      value: 'Pass only if the review explains that getViewData() misleadingly suggests a cheap accessor despite repository I/O and recommends fetchViewData().'
+  metadata:
+    id: php-readable-code:fetch-costly-data
+    skill: php-readable-code
+    kind: review

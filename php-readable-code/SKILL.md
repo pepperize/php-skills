@@ -47,6 +47,19 @@ When a class mainly creates a returned object, prefer the Factory pattern: name 
 - Static factory methods should also use an action-oriented name unless they follow an established PHP or project convention such as `from(...)`.
 - Before accepting new or renamed methods, classify each one as an accessor/property, boolean predicate, action/operation, or factory/construction helper. Accessors should use noun or state names such as `status()`, `totalCount()`, `successCount()`, or `failureCount()`. Boolean predicates should read as predicates, such as `isSuccess()` or `hasFailures()`. Action, operation, and factory helper methods must use verb phrases. Avoid past-tense or adjective helper names such as `succeeded(...)`, `failed(...)`, `missingTranslation(...)`, or `partialSuccess(...)` when the method creates, transforms, or returns a result; prefer names such as `createSuccessResult(...)`, `createFailureResult(...)`, `resolveStatus()`, or `collectFailures(...)`.
 
+### Fetching Data
+
+- Use `fetch...` for application-service operations that perform repository, filesystem, network, or other potentially costly I/O. Do not name these operations `get...`, because `get` suggests a cheap accessor.
+- Prefer a purpose-revealing name such as `fetchViewData()` over a generic `fetch()`.
+- HTTP controller methods may retain names such as `getPrivacyPolicy()` when `get` represents the HTTP verb.
+
+```php
+$viewData = $privacyPolicyViewService->fetchViewData(); // Repository access: correct.
+$viewData = $privacyPolicyViewService->getViewData();   // Repository access: misleading.
+
+$controller->getPrivacyPolicy(...); // HTTP GET handler: correct.
+```
+
 ## Static Helpers
 
 - Do not add static helper or factory methods in project-owned PHP code by default.

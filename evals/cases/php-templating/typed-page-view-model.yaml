@@ -1,0 +1,56 @@
+- description: php-templating:typed-page-view-model
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-templating/SKILL.md
+    project_instructions: |
+      This Slim 4 application uses native PHP templates. The privacy-policy page
+      has document metadata, a shared site header, policy content, and legal
+      navigation. Contacts and navigation options have stable structured fields.
+    task: |
+      Refactor the controller and template input below to use type-safe
+      presentation models. Show the page and nested model classes, the final
+      render call, and how the page template passes policy content to a partial.
+    code: |
+      $templates->render($response, 'privacy-policy.php', [
+          'locale' => $locale,
+          'pageTitle' => 'Privacy policy',
+          'homeUrl' => $homeUrl,
+          'operator' => [
+              'name' => $operator->name,
+              'protectedEmail' => $protectedEmail,
+          ],
+          'recipients' => $recipients,
+          'privacyPolicyUrl' => $privacyPolicyUrl,
+      ]);
+  assert:
+    - type: contains
+      value: PrivacyPolicyPageViewModel
+    - type: contains
+      value: PrivacyPolicyContentViewModel
+    - type: contains
+      value: PrivacyPolicyContactViewModel
+    - type: contains
+      value: PrivacyPolicyRecipientViewModel
+    - type: regex
+      value: 'list<PrivacyPolicyRecipientViewModel>'
+    - type: regex
+      value: '\[''page''\s*=>\s*\$page\]'
+    - type: regex
+      value: '\$page->content'
+    - type: not-regex
+      value: 'class\s+\w+(?:ViewData|View)\b'
+    - type: llm-rubric
+      value: >-
+        Pass only if the answer creates an immutable page-specific ViewModel
+        structured around semantic page components, uses typed nested ViewModels
+        for contacts and recipients instead of associative record shapes, keeps
+        arrays only for typed collections and framework variable binding, passes
+        the page as ['page' => $page], and gives the content ViewModel explicitly
+        to the partial. Fail if it flattens the page model back into render keys,
+        calls a presentation data class View or ViewData, exposes domain/framework
+        objects through a ViewModel, or models incidental HTML elements.
+  metadata:
+    id: php-templating:typed-page-view-model
+    skill: php-templating
+    kind: apply

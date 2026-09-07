@@ -1,6 +1,6 @@
 ---
 name: php-templating
-description: Applies company PHP templating conventions for established engine selection, layouts, partials, output escaping, interface translation, and source-controlled localized page content. Use when choosing or changing a PHP template engine, writing or reviewing templates, implementing template escaping and translation helpers, or organizing localized static content.
+description: Applies company PHP templating conventions for typed page ViewModels, established engine selection, layouts, partials, output escaping, interface translation, and source-controlled localized page content. Use when defining data passed to server-rendered pages, choosing or changing a PHP template engine, writing or reviewing templates, implementing template escaping and translation helpers, or organizing localized static content.
 ---
 
 # PHP Templating
@@ -14,7 +14,7 @@ For Slim-based projects, prefer `slim/php-view` with native PHP templates, using
 When using `slim/php-view`:
 
 - Configure the layout on the renderer with `$renderer->setLayout('layout.php')`.
-- Render reusable template parts with `$this->fetch('partials/contact.php', ['name' => $name])` so their input is explicit.
+- Render reusable template parts with `$this->fetch('partials/contact.php', ['locale' => $locale, 'contact' => $contact])` so their typed input and required rendering context are explicit.
 - Do not use APIs from other template engines such as `$this->layout()`, or bypass PHP-View's partial support with raw `include` calls.
 
 Escape HTML output explicitly through a shared `html(string $value): string` helper using `htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')`. Do not apply HTML escaping to plain-text output.
@@ -22,6 +22,121 @@ Escape HTML output explicitly through a shared `html(string $value): string` hel
 Prefer built-in PHP functionality over additional dependencies when it meets the actual requirements. Introduce another template engine or escaping library only when a concrete requirement justifies it. Handle JavaScript, CSS, and URL contexts separately if they arise.
 
 Start with the framework's simplest suitable option, and justify additional features against actual requirements.
+
+## Typed Page ViewModels
+
+Every server-rendered page must receive one page-specific ViewModel containing its application-provided template data.
+
+- Name presentation models `<Concept>ViewModel`. The template is the view; do not name presentation data classes `<Concept>View` or `<Concept>ViewData`.
+- Prefer `final readonly class` for ViewModels.
+- Structure a page ViewModel by stable semantic page components such as metadata, header, content, and legal navigation.
+- Give structured nested data its own ViewModel. Do not represent contacts, navigation links, language options, or similar records as associative array shapes.
+- Use native arrays only for collections and document their element type as `list<SomeViewModel>`.
+- Do not create ViewModels for incidental HTML elements. Model concepts that carry meaningful presentation data or correspond to reusable components.
+- Keep ViewModels free of requests, responses, route parsers, renderers, repositories, domain entities, infrastructure objects, HTML markup, and escaping behavior.
+- At the page-render boundary, pass one page ViewModel. With `slim/php-view`, use `['page' => $page]`; the array exists only because the framework binds names to template variables.
+- For partials, pass the relevant nested ViewModel plus unavoidable rendering context such as locale or a CSS variant. Do not flatten the component back into scalar or associative-array fields.
+
+Avoid a loose render-data map with nested array shapes:
+
+```php
+$this->templates->render($response, 'privacy-policy.php', [
+    'locale' => $locale,
+    'homeUrl' => $homeUrl,
+    'operator' => [
+        'name' => $operator->name,
+        'protectedEmail' => $protectedEmail,
+    ],
+    'recipients' => $recipients,
+]);
+```
+
+Prefer a ViewModel hierarchy that follows the page:
+
+```php
+final readonly class PrivacyPolicyPageViewModel implements PageViewModel
+{
+    public function __construct(
+        public PageMetadataViewModel $metadata,
+        public SiteHeaderViewModel $header,
+        public PrivacyPolicyContentViewModel $content,
+        public LegalNavigationViewModel $legalNavigation,
+    ) {
+    }
+
+    public function metadata(): PageMetadataViewModel
+    {
+        return $this->metadata;
+    }
+}
+
+final readonly class PrivacyPolicyContactViewModel
+{
+    /** @param list<string> $postalAddressLines */
+    public function __construct(
+        public string $name,
+        public array $postalAddressLines,
+        public string $protectedEmail,
+    ) {
+    }
+}
+
+final readonly class PrivacyPolicyContentViewModel
+{
+    /** @param list<PrivacyPolicyRecipientViewModel> $recipients */
+    public function __construct(
+        public PrivacyPolicyContactViewModel $operator,
+        public array $recipients,
+        public string $version,
+    ) {
+    }
+}
+
+final readonly class PrivacyPolicyRecipientViewModel
+{
+    public function __construct(
+        public PrivacyPolicyContactViewModel $contact,
+        public ?string $privacyPolicyUrl,
+    ) {
+    }
+}
+```
+
+The controller adapts the page to PHP-View only at the final boundary:
+
+```php
+$page = new PrivacyPolicyPageViewModel(
+    metadata: $metadata,
+    header: $header,
+    content: $content,
+    legalNavigation: $legalNavigation,
+);
+
+return $this->templates->render(
+    $response,
+    'privacy-policy.php',
+    ['page' => $page],
+);
+```
+
+The page template and partial keep their type information:
+
+```php
+/** @var PrivacyPolicyPageViewModel $page */
+
+<?= $this->fetch('partials/privacy-policy-content.php', [
+    'locale' => $page->metadata->locale,
+    'content' => $page->content,
+]) ?>
+```
+
+Before finalizing a server-rendered page change:
+
+- Inspect each changed `render()` call and verify that application data enters through one page ViewModel.
+- Inspect associative arrays passed to templates and replace structured records with typed ViewModels.
+- Confirm that the ViewModel hierarchy follows semantic page components rather than incidental markup.
+- Confirm that collection elements are typed ViewModels.
+- Confirm that templates escape dynamic output at the output location.
 
 ## Interface Translation In Templates
 
