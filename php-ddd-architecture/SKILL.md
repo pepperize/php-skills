@@ -61,29 +61,32 @@ In DDD projects, treat framework configuration as infrastructure, not applicatio
 
 For server-rendered controllers, read the application-boundary examples in [references/repositories.md](references/repositories.md).
 
-- Controllers must not depend directly on repositories. Introduce a frontend application service that coordinates repository access.
-- The service must return a feature-specific presentation ViewModel containing only the data required by the page content. Do not return domain entities, value objects, repository results, or infrastructure types to the controller or template.
-- Perform domain-to-view mapping and presentation transformations, such as public email protection, in the frontend service.
-- The controller composes the content ViewModel with request-specific page ViewModels such as metadata, header navigation, and legal navigation, then passes the resulting page ViewModel to the renderer.
-- Keep request parsing, route URL generation, response rendering, status codes, and response headers in the controller.
-- Do not pass requests, responses, route parsers, renderers, or other framework objects into the service.
-- Name service operations that perform repository or external I/O with `fetch...`, such as `fetchContent()`. Keep `get...` controller method names when `get` represents the HTTP verb.
-- Before finalizing, verify that controller constructors contain no repository dependencies, domain-derived render values come from the service ViewModel, and route-derived values are composed into the page ViewModel by the controller.
+- Controllers must not depend directly on repositories. Introduce a frontend ViewService as the page-level presentation query.
+- The ViewService must return the complete page-specific ViewModel consumed by the template. It coordinates domain-derived content with metadata and shared presentation components such as the site header and legal navigation.
+- Perform repository access, domain-to-view mapping, and presentation transformations such as public email protection in the ViewService or a focused collaborator used by it. Do not expose domain entities, value objects, repository results, or infrastructure types through the page ViewModel.
+- Obtain persisted or external domain data through repositories. A repository implementation may delegate technical communication to a client; the ViewService must not bypass the repository by depending on that client directly.
+- Pass typed request-derived values such as `Locale` into the ViewService. Do not pass requests, responses, or renderers into it.
+- Obtain shared component ViewModels through shared presentation collaborators. When a collaborator mainly constructs a ViewModel, name it `<Component>ViewModelFactory` and name its main operation `create(...)` or a purpose-revealing `createFor...(...)` variant.
+- Route generation belongs to the frontend presentation boundary. A frontend ViewService or shared ViewModel factory may depend on `RouteParserInterface`; domain models, domain services, and repositories must not depend on it.
+- Assign repository, service, and factory results to semantically named local variables before passing them to the page ViewModel constructor so each intermediate value remains easy to inspect in a debugger.
+- The controller converts and validates HTTP input, calls one page ViewService, passes the returned page ViewModel to the established renderer, and completes the HTTP response with its status and headers. Keep the conventional `Renderer` name for a collaborator that renders a template and ViewModel into an HTML response body.
+- Name a ViewService operation that performs repository or external I/O `fetchPage(...)`. Keep `get...` controller method names when `get` represents the HTTP verb.
+- Before finalizing, verify that the controller contains no repository access or page-component construction, the ViewService returns the complete page ViewModel, domain-derived values came through repositories, and the renderer receives that page as the sole application-data input.
 
 ### Slim Route URL Generation
 
 When a Slim controller or web adapter generates route URLs, read [references/slim-route-url-generation.md](references/slim-route-url-generation.md) before editing.
 
-- Inject `Slim\Interfaces\RouteParserInterface` as a required constructor dependency.
+- Inject `Slim\Interfaces\RouteParserInterface` as a required constructor dependency of the frontend presentation collaborator that owns the generated URLs.
 - Do not obtain the route parser through `RouteContext::fromRequest($request)->getRouteParser()` or another request-scoped lookup.
 - Register `RouteParserInterface` once in infrastructure composition using the application's route collector.
 - Remove `ServerRequestInterface` parameters that existed only to obtain the route parser. Keep the request when the action reads headers, attributes, query parameters, the URI, or other request data.
 - Preserve existing route names and route arguments during this refactor.
 - Do not introduce a project-owned URL-generator abstraction unless the existing architecture already defines one.
-- Keep Slim route generation in controllers or web adapters. Do not pass the route parser into domain or application services.
-- In unit tests, mock `RouteParserInterface` directly and verify route names and arguments. Do not construct a Slim request or attach `RouteContext` solely to provide URL generation. HTTP integration tests may still use requests to exercise routing and dispatch.
+- Keep Slim route generation in frontend presentation collaborators such as controllers, ViewServices, or ViewModel factories. Do not pass the route parser into domain models, domain services, or repositories.
+- In unit tests, mock `RouteParserInterface` directly at the collaborator that owns URL generation and verify route names and arguments when those interactions are the behavior under test. Do not construct a Slim request or attach `RouteContext` solely to provide URL generation. HTTP integration tests may still use requests to exercise routing and dispatch.
 
-Before finalizing Slim URL-generation changes, search production code and tests for `RouteContext` and `getRouteParser()`. Verify that request-scoped route-parser lookup is gone, `getRouteParser()` remains only in infrastructure composition, and controller integration tests cover route names, base paths, and generated URLs.
+Before finalizing Slim URL-generation changes, search production code and tests for `RouteContext` and `getRouteParser()`. Verify that request-scoped route-parser lookup is gone, `getRouteParser()` remains only in infrastructure composition, and integration tests cover route names, base paths, and generated URLs.
 
 ## API Boundary Validation
 

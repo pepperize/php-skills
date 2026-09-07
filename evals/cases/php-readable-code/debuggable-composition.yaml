@@ -1,0 +1,34 @@
+- description: php-readable-code:debuggable-composition
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    task: |
+      Refactor this page-composition method so meaningful intermediate values
+      and their types can be inspected easily in an IDE debugger. Preserve its
+      behavior and return type.
+    code: |
+      public function fetchPage(Locale $locale): PrivacyPolicyPageViewModel
+      {
+          return new PrivacyPolicyPageViewModel(
+              new PageMetadataViewModel($locale, 'Privacy policy'),
+              $this->siteHeaderFactory->createForLegalPage($locale, 'privacy-policy'),
+              $this->fetchContent(),
+              $this->legalNavigationFactory->create($locale, 'privacy-policy'),
+          );
+      }
+  assert:
+    - type: regex
+      value: '\$metadata\s*=\s*new\s+PageMetadataViewModel'
+    - type: regex
+      value: '\$header\s*=\s*\$this->siteHeaderFactory->createForLegalPage'
+    - type: regex
+      value: '\$content\s*=\s*\$this->fetchContent\(\)'
+    - type: regex
+      value: '\$legalNavigation\s*=\s*\$this->legalNavigationFactory->create'
+    - type: llm-rubric
+      value: 'Pass only if each page component is assigned to a semantically named local variable before constructing PrivacyPolicyPageViewModel, the constructor receives those variables instead of inline collaborator calls, and behavior remains unchanged. Fail if repository, service, or factory calls remain nested in the final page constructor or unnecessary helper methods are introduced.'
+  metadata:
+    id: php-readable-code:debuggable-composition
+    skill: php-readable-code
+    kind: apply

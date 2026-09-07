@@ -82,6 +82,33 @@ final class FilePrivacyPolicyVersionRepository implements PrivacyPolicyVersionRe
 }
 ```
 
+When retrieval uses a remote API, keep the domain-facing retrieval contract on the repository and let its infrastructure implementation call a technical client:
+
+```php
+namespace Example\Infrastructure\LegalOperator;
+
+use Example\Domain\LegalOperator\LegalOperator;
+use Example\Domain\LegalOperator\LegalOperatorRepository;
+
+final class RemoteLegalOperatorRepository implements LegalOperatorRepository
+{
+    public function __construct(private LegalOperatorClient $client)
+    {
+    }
+
+    public function find(): LegalOperator
+    {
+        $response = $this->client->fetchLegalOperator();
+
+        return new LegalOperator(
+            $response->name,
+            $response->postalAddressLines,
+            $response->email,
+        );
+    }
+}
+```
+
 An empty infrastructure implementation still honors the collection contract:
 
 ```php
@@ -98,7 +125,7 @@ final class EmptyForwardingRecipientRepository implements ForwardingRecipientRep
 }
 ```
 
-Application services consume domain repository contracts and map domain models into presentation ViewModels. Controllers depend on those services, compose the complete page ViewModel, and keep only HTTP, routing, and rendering concerns:
+Frontend ViewServices consume domain repository contracts, map domain models into presentation ViewModels, and return the complete page ViewModel. Controllers depend on those services and keep only HTTP input adaptation, rendering, status codes, and response headers:
 
 ```php
 namespace Example\App\Frontend\PrivacyPolicy;
@@ -154,22 +181,47 @@ final class PrivacyPolicyViewService
         private LegalOperatorRepository $legalOperatorRepository,
         private ForwardingRecipientRepository $recipientRepository,
         private PublicEmailProtector $emailProtector,
+        private SiteHeaderViewModelFactory $siteHeaderFactory,
+        private LegalNavigationViewModelFactory $legalNavigationFactory,
     ) {
     }
 
-    public function fetchContent(): PrivacyPolicyContentViewModel
+    public function fetchPage(Locale $locale): PrivacyPolicyPageViewModel
+    {
+        $metadata = new PageMetadataViewModel($locale, 'Privacy policy');
+        $header = $this->siteHeaderFactory->createForLegalPage(
+            $locale,
+            'privacy-policy',
+        );
+        $content = $this->fetchContent();
+        $legalNavigation = $this->legalNavigationFactory->create(
+            $locale,
+            'privacy-policy',
+        );
+
+        return new PrivacyPolicyPageViewModel(
+            $metadata,
+            $header,
+            $content,
+            $legalNavigation,
+        );
+    }
+
+    private function fetchContent(): PrivacyPolicyContentViewModel
     {
         $legalOperator = $this->legalOperatorRepository->find();
+        $protectedOperatorEmail = $this->emailProtector->protect($legalOperator->email);
         $operator = new PrivacyPolicyContactViewModel(
             $legalOperator->name,
-            $this->emailProtector->protect($legalOperator->email),
+            $protectedOperatorEmail,
         );
         $recipients = [];
 
         foreach ($this->recipientRepository->findAll() as $recipient) {
+            $protectedRecipientEmail = $this->emailProtector->protect($recipient->email);
             $contact = new PrivacyPolicyContactViewModel(
                 $recipient->name,
-                $this->emailProtector->protect($recipient->email),
+                $protectedRecipientEmail,
             );
             $recipients[] = new PrivacyPolicyRecipientViewModel($contact);
         }
@@ -183,38 +235,24 @@ final class PrivacyPolicyController
     public function __construct(
         private PhpRenderer $templates,
         private PrivacyPolicyViewService $privacyPolicyViewService,
-        private RouteParserInterface $routeParser,
     ) {
     }
 
     public function getPrivacyPolicy(
-        ServerRequestInterface $request,
         ResponseInterface $response,
+        string $locale,
     ): ResponseInterface {
-        $selectedLocale = Locale::from($request->getAttribute('locale'));
-        $content = $this->privacyPolicyViewService->fetchContent();
-        $page = new PrivacyPolicyPageViewModel(
-            metadata: new PageMetadataViewModel($selectedLocale, 'Privacy policy'),
-            header: new SiteHeaderViewModel(
-                homeUrl: $this->routeParser->urlFor(
-                    'home',
-                    ['locale' => $selectedLocale->value],
-                ),
-            ),
-            content: $content,
-            legalNavigation: new LegalNavigationViewModel(
-                privacyPolicyUrl: $this->routeParser->urlFor(
-                    'privacy-policy',
-                    ['locale' => $selectedLocale->value],
-                ),
-            ),
-        );
-
-        return $this->templates->render(
+        $selectedLocale = Locale::from($locale);
+        $page = $this->privacyPolicyViewService->fetchPage($selectedLocale);
+        $renderedResponse = $this->templates->render(
             $response,
             'privacy-policy.php',
             ['page' => $page],
         );
+
+        return $renderedResponse
+            ->withHeader('Content-Language', $selectedLocale->value)
+            ->withHeader('Content-Type', 'text/html; charset=UTF-8');
     }
 }
 ```
@@ -244,6 +282,21 @@ final class PrivacyPolicyController
         ]);
     }
 }
+```
+
+This service returns only one page fragment and leaves shared component retrieval and complete page composition in the controller:
+
+```php
+$content = $this->privacyPolicyViewService->fetchContent();
+$header = $this->siteHeaderFactory->createForLegalPage($locale, 'privacy-policy');
+$legalNavigation = $this->legalNavigationFactory->create($locale, 'privacy-policy');
+
+$page = new PrivacyPolicyPageViewModel(
+    new PageMetadataViewModel($locale, 'Privacy policy'),
+    $header,
+    $content,
+    $legalNavigation,
+);
 ```
 
 This interface is misplaced and uses a vague name. Its returned model is owned by a presentation module even though it represents a shared domain concept.

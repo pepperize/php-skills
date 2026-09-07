@@ -34,7 +34,9 @@ Every server-rendered page must receive one page-specific ViewModel containing i
 - Use native arrays only for collections and document their element type as `list<SomeViewModel>`.
 - Do not create ViewModels for incidental HTML elements. Model concepts that carry meaningful presentation data or correspond to reusable components.
 - Keep ViewModels free of requests, responses, route parsers, renderers, repositories, domain entities, infrastructure objects, HTML markup, and escaping behavior.
+- In a server-rendered flow with a frontend ViewService, that service returns the complete page-specific ViewModel. The controller must not assemble metadata, content, or shared component ViewModels around a partial service result.
 - At the page-render boundary, pass one page ViewModel. With `slim/php-view`, use `['page' => $page]`; the array exists only because the framework binds names to template variables.
+- Keep established renderer terminology. A collaborator that renders a template and ViewModel into an HTML response body remains a renderer; do not rename it to a factory merely because rendering creates output.
 - For partials, pass the relevant nested ViewModel plus unavoidable rendering context such as locale or a CSS variant. Do not flatten the component back into scalar or associative-array fields.
 
 Avoid a loose render-data map with nested array shapes:
@@ -102,21 +104,44 @@ final readonly class PrivacyPolicyRecipientViewModel
 }
 ```
 
-The controller adapts the page to PHP-View only at the final boundary:
+The frontend ViewService returns the complete page ViewModel, and the controller adapts it to PHP-View only at the final boundary:
 
 ```php
-$page = new PrivacyPolicyPageViewModel(
-    metadata: $metadata,
-    header: $header,
-    content: $content,
-    legalNavigation: $legalNavigation,
-);
+final class PrivacyPolicyViewService
+{
+    public function fetchPage(Locale $locale): PrivacyPolicyPageViewModel
+    {
+        $metadata = new PageMetadataViewModel($locale, 'Privacy policy');
+        $header = $this->siteHeaderFactory->createForLegalPage(
+            $locale,
+            'privacy-policy',
+        );
+        $content = $this->fetchContent();
+        $legalNavigation = $this->legalNavigationFactory->create(
+            $locale,
+            'privacy-policy',
+        );
 
-return $this->templates->render(
+        return new PrivacyPolicyPageViewModel(
+            $metadata,
+            $header,
+            $content,
+            $legalNavigation,
+        );
+    }
+}
+
+$selectedLocale = Locale::from($locale);
+$page = $this->privacyPolicyViewService->fetchPage($selectedLocale);
+$renderedResponse = $this->templates->render(
     $response,
     'privacy-policy.php',
     ['page' => $page],
 );
+
+return $renderedResponse
+    ->withHeader('Content-Language', $selectedLocale->value)
+    ->withHeader('Content-Type', 'text/html; charset=UTF-8');
 ```
 
 The page template and partial keep their type information:
@@ -136,6 +161,7 @@ Before finalizing a server-rendered page change:
 - Inspect associative arrays passed to templates and replace structured records with typed ViewModels.
 - Confirm that the ViewModel hierarchy follows semantic page components rather than incidental markup.
 - Confirm that collection elements are typed ViewModels.
+- When a frontend ViewService is present, confirm that it returns the complete page ViewModel and the controller does not construct page components.
 - Confirm that templates escape dynamic output at the output location.
 
 ## Interface Translation In Templates

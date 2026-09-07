@@ -9,9 +9,11 @@
     task: |
       Refactor this server-rendered controller so it no longer accesses repositories directly.
       The rendered data must not expose domain objects. Show the resulting controller,
-      application service, typed content and page ViewModels, and final render
-      call. Repository access is potentially costly. The controller owns
-      request-specific metadata and route-derived navigation URLs.
+      frontend ViewService, typed content and page ViewModels, shared header and
+      legal-navigation collaborators, and final render call. Repository access
+      is potentially costly. The ViewService must return the complete page
+      ViewModel; the controller should only adapt HTTP input, call the service,
+      render its result, and complete the HTTP response.
     code: |
       final class PrivacyPolicyController
       {
@@ -40,15 +42,19 @@
     - type: contains
       value: PrivacyPolicyContentViewModel
     - type: regex
-      value: 'function\s+fetch\w*\s*\(\s*\)\s*:\s*PrivacyPolicyContentViewModel'
+      value: 'function\s+fetchPage\s*\([^)]*Locale[^)]*\)\s*:\s*PrivacyPolicyPageViewModel'
     - type: regex
       value: 'private\s+PrivacyPolicyViewService\s+\$\w+'
     - type: contains
       value: PrivacyPolicyPageViewModel
+    - type: contains
+      value: SiteHeaderViewModelFactory
+    - type: contains
+      value: LegalNavigationViewModelFactory
     - type: regex
       value: '\[''page''\s*=>\s*\$page\]'
     - type: llm-rubric
-      value: 'Pass only if repository dependencies and domain-to-view mapping move into a frontend application service, the service returns a typed content ViewModel containing no domain objects, and the controller depends on that service while retaining HTTP, routing, full-page ViewModel composition, and rendering concerns. The service must receive no HTTP or framework objects. Fail if the controller still depends directly on a repository, passes domain entities to the template, flattens the page into render keys, or calls presentation data View or ViewData.'
+      value: 'Pass only if repository dependencies and domain-to-view mapping move into a frontend ViewService, the service returns the complete typed PrivacyPolicyPageViewModel containing no domain objects, shared header and legal-navigation ViewModels come from focused presentation collaborators, and the controller only adapts HTTP input, calls fetchPage(), gives the returned page to the renderer, and completes the response. The ViewService may receive typed request-derived values such as Locale and presentation collaborators may use RouteParserInterface, but requests, responses, and renderers must not enter the ViewService. Fail if the controller still depends on a repository, constructs metadata or page-component ViewModels, receives a partial content ViewModel from the service, passes domain entities to the template, flattens the page into render keys, or calls presentation data View or ViewData.'
   metadata:
     id: php-ddd-architecture:controller-view-service-boundary
     skill: php-ddd-architecture

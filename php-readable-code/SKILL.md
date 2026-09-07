@@ -13,6 +13,37 @@ description: Use when writing, refactoring, or reviewing PHP production code aro
 - Avoid passing non-trivial method calls directly as arguments when an intermediate variable would clarify intent. Name semantically important intermediate results.
 - Prefer simple, common words that non-native speakers can read without looking them up.
 
+## Debuggable Composition
+
+When constructing an aggregate result such as a page ViewModel, assign each repository, service, or factory result to a semantically named local variable before passing it to the constructor. Do not inline these collaborator calls as constructor arguments. The local variables must make intermediate values and types directly inspectable in an IDE or debugger. Literals and already-available variables may still be passed directly.
+
+Avoid hiding collaborator results inside the final construction:
+
+```php
+return new PrivacyPolicyPageViewModel(
+    new PageMetadataViewModel($locale, 'Privacy policy'),
+    $this->siteHeaderFactory->createForLegalPage($locale, 'privacy-policy'),
+    $this->fetchContent(),
+    $this->legalNavigationFactory->create($locale, 'privacy-policy'),
+);
+```
+
+Keep each meaningful intermediate result visible:
+
+```php
+$metadata = new PageMetadataViewModel($locale, 'Privacy policy');
+$header = $this->siteHeaderFactory->createForLegalPage($locale, 'privacy-policy');
+$content = $this->fetchContent();
+$legalNavigation = $this->legalNavigationFactory->create($locale, 'privacy-policy');
+
+return new PrivacyPolicyPageViewModel(
+    $metadata,
+    $header,
+    $content,
+    $legalNavigation,
+);
+```
+
 ## Guard Clauses
 
 - Do not use assertion utilities in application, domain, or service code to enforce business conditions.

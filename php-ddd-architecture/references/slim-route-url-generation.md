@@ -1,46 +1,22 @@
 # Slim Route URL Generation
 
-Use Slim's `RouteParserInterface` directly at the web boundary. Constructor injection exposes URL generation as a required controller dependency and avoids coupling otherwise-unused requests to route lookup.
+Use Slim's `RouteParserInterface` directly in the frontend presentation collaborator that owns the generated URLs. Constructor injection exposes URL generation as a required dependency and avoids coupling an otherwise-unused request to route lookup.
 
-## Controller
+## Server-rendered Pages
 
-Do not retrieve the parser from `RouteContext`:
+Do not retrieve the parser from `RouteContext` inside a controller:
 
 ```php
-final class ImprintController
+final class PrivacyPolicyController
 {
-    public function getImprint(
+    public function getPrivacyPolicy(
         ServerRequestInterface $request,
         ResponseInterface $response,
         string $locale,
     ): ResponseInterface {
         $routeParser = RouteContext::fromRequest($request)->getRouteParser();
-        $imprintUrl = $routeParser->urlFor('imprint', ['locale' => $locale]);
-
-        // ...
-    }
-}
-```
-
-Inject Slim's interface and remove the request when the action has no other use for it:
-
-```php
-use Slim\Interfaces\RouteParserInterface;
-
-final class ImprintController
-{
-    public function __construct(
-        private PhpRenderer $templates,
-        private RouteParserInterface $routeParser,
-    ) {
-    }
-
-    public function getImprint(
-        ResponseInterface $response,
-        string $locale,
-    ): ResponseInterface {
-        $imprintUrl = $this->routeParser->urlFor(
-            'imprint',
+        $privacyPolicyUrl = $routeParser->urlFor(
+            'privacy-policy',
             ['locale' => $locale],
         );
 
@@ -49,7 +25,71 @@ final class ImprintController
 }
 ```
 
-Keep `ServerRequestInterface` when the controller reads real request data:
+For a server-rendered page, put route-derived component data in the frontend ViewService or a shared ViewModel factory. The controller calls the ViewService and gives its complete page ViewModel to the renderer:
+
+```php
+use Slim\Interfaces\RouteParserInterface;
+
+final class LegalNavigationViewModelFactory
+{
+    public function __construct(private RouteParserInterface $routeParser)
+    {
+    }
+
+    public function create(Locale $locale, string $currentRouteName): LegalNavigationViewModel
+    {
+        $imprintUrl = $this->routeParser->urlFor(
+            'imprint',
+            ['locale' => $locale->value],
+        );
+        $privacyPolicyUrl = $this->routeParser->urlFor(
+            'privacy-policy',
+            ['locale' => $locale->value],
+        );
+
+        return new LegalNavigationViewModel([
+            new LegalNavigationLinkViewModel(
+                'Imprint',
+                $imprintUrl,
+                $currentRouteName === 'imprint',
+            ),
+            new LegalNavigationLinkViewModel(
+                'Privacy policy',
+                $privacyPolicyUrl,
+                $currentRouteName === 'privacy-policy',
+            ),
+        ]);
+    }
+}
+
+final class PrivacyPolicyController
+{
+    public function __construct(
+        private PhpRenderer $templates,
+        private PrivacyPolicyViewService $privacyPolicyViewService,
+    ) {
+    }
+
+    public function getPrivacyPolicy(
+        ResponseInterface $response,
+        string $locale,
+    ): ResponseInterface {
+        $selectedLocale = Locale::from($locale);
+        $page = $this->privacyPolicyViewService->fetchPage($selectedLocale);
+        $renderedResponse = $this->templates->render(
+            $response,
+            'privacy-policy.php',
+            ['page' => $page],
+        );
+
+        return $renderedResponse
+            ->withHeader('Content-Language', $selectedLocale->value)
+            ->withHeader('Content-Type', 'text/html; charset=UTF-8');
+    }
+}
+```
+
+Keep `ServerRequestInterface` when the controller reads real request data. A redirect-only controller may own route generation directly because it does not build a server-rendered page:
 
 ```php
 public function getDefaultLocale(
@@ -87,24 +127,23 @@ $container->set(
 
 ## Unit Test
 
-Mock `RouteParserInterface` at the controller boundary. A PSR-7 response may still be constructed because it is the action output; no request or `RouteContext` is needed solely for URL generation.
+Mock `RouteParserInterface` at the frontend presentation collaborator that owns URL generation. Do not construct a request or `RouteContext` solely to provide URL generation.
 
 ```php
 $routeParser = $this->createMock(RouteParserInterface::class);
-$routeParser->expects(self::once())
+$routeParser->expects(self::exactly(2))
     ->method('urlFor')
-    ->with('home', ['locale' => 'en'])
-    ->willReturn('/en/');
+    ->willReturnMap([
+        ['imprint', ['locale' => 'en'], '/en/imprint'],
+        ['privacy-policy', ['locale' => 'en'], '/en/privacy-policy'],
+    ]);
 
-$controller = new LocaleRedirectController(
-    new AcceptLanguageLocaleSelector(),
-    $routeParser,
-);
-$response = (new ResponseFactory())->createResponse();
+$factory = new LegalNavigationViewModelFactory($routeParser);
 
-$actual = $controller->getLocaleWithoutTrailingSlash($response, 'en');
+$actual = $factory->create(Locale::English, 'privacy-policy');
 
-self::assertSame('/en/', $actual->getHeaderLine('Location'));
+self::assertSame('/en/imprint', $actual->links[0]->url);
+self::assertSame('/en/privacy-policy', $actual->links[1]->url);
 ```
 
 HTTP integration tests may continue creating requests when they verify Slim dispatch, route registration, middleware, base paths, or other application-boundary behavior.
