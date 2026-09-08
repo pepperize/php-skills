@@ -13,7 +13,7 @@ The initial suite focuses on rules that are concrete enough to evaluate consiste
 - `php-templating`: typed page ViewModels, Slim PHP-View selection and partials, explicit HTML escaping versus plain-text output, source-text translation keys, `_t()`, ICU pluralization, and per-render locale isolation.
 - `php-domain-clarification`: asking questions before coding ambiguous domain scoping.
 - `php-clean-architecture`: respecting the activation guard.
-- `php-ddd-architecture`: domain repository ownership, retrieval naming, absence behavior, infrastructure implementation boundaries, controller-to-view-service boundaries, and Slim route-parser injection.
+- `php-ddd-architecture`: domain repository ownership, retrieval naming, absence behavior, infrastructure implementation boundaries, controller-to-view-service boundaries, form-validation middleware, and Slim route-parser injection.
 - `php-database-migrations`: selecting Laravel, Doctrine Migrations, or Phinx without adding a second migration framework, timestamp naming, applied migration integrity, and application boot verification.
 
 ## Assertions

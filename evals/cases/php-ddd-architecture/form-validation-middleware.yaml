@@ -1,0 +1,72 @@
+- description: php-ddd-architecture:form-validation-middleware
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-ddd-architecture/SKILL.md
+    project_instructions: |
+      This project uses Domain-Driven Design. Frontend HTTP code lives under
+      App/Frontend and the application uses Slim with PSR-15 middleware.
+    task: |
+      Refactor this server-rendered contact-form submission so form values are
+      created and validated in the project's preferred boundary. Show the
+      resulting middleware, controller action, and route registration. Invalid
+      forms must be rendered with status 422; valid forms call ContactService.
+    code: |
+      final class ContactController
+      {
+          public function __construct(
+              private ContactFormValuesFactory $valuesFactory,
+              private ContactFormValidator $validator,
+              private ContactPageRenderer $pageRenderer,
+              private ContactService $contactService,
+              private ContactResponseFactory $responseFactory,
+          ) {
+          }
+
+          public function postContact(
+              ServerRequestInterface $request,
+              ResponseInterface $response,
+          ): ResponseInterface {
+              $parsedBody = $request->getParsedBody();
+              $requestBody = is_array($parsedBody) ? $parsedBody : [];
+              $values = $this->valuesFactory->create($requestBody);
+              $validationResult = $this->validator->validate($values);
+
+              if ($validationResult->hasErrors()) {
+                  return $this->pageRenderer->renderForm(
+                      $response->withStatus(422),
+                      $values,
+                      $validationResult,
+                  );
+              }
+
+              $this->contactService->send($validationResult->message());
+
+              return $this->responseFactory->createSuccess();
+          }
+      }
+  assert:
+    - type: contains
+      value: ContactFormValidationMiddleware
+    - type: regex
+      value: 'class\s+ContactFormValidationMiddleware\s+implements\s+MiddlewareInterface'
+    - type: contains
+      value: withAttribute(ContactFormValues::class
+    - type: contains
+      value: withAttribute(ContactFormValidationResult::class
+    - type: contains
+      value: getAttribute(ContactFormValues::class
+    - type: contains
+      value: getAttribute(ContactFormValidationResult::class
+    - type: contains
+      value: LogicException
+    - type: contains
+      value: withStatus(422)
+    - type: regex
+      value: 'add\s*\(\s*ContactFormValidationMiddleware::class\s*\)'
+    - type: llm-rubric
+      value: 'Pass only if request-body conversion and ContactFormValidator invocation move into a route-specific PSR-15 middleware, the middleware attaches typed ContactFormValues and ContactFormValidationResult request attributes and delegates, and the submission route registers that middleware. The controller must no longer depend on ContactFormValuesFactory or ContactFormValidator; it must require the typed attributes, treat their absence as a LogicException wiring error, render invalid forms with status 422, and call ContactService only after successful validation. Fail if middleware renders the form response, validation remains in the controller, or domain-wide invariants are described as middleware-only rules.'
+  metadata:
+    id: php-ddd-architecture:form-validation-middleware
+    skill: php-ddd-architecture
+    kind: apply
