@@ -52,6 +52,7 @@ After making PHP code, test, or skill changes, review the diff before the final 
 - Use `php-testing-style` for all test naming, mocks, unit/integration boundaries, assertions, layout, and verification scope.
 - Use `php-application-security` for input validation, regex safety, and other application-security-sensitive code paths.
 - Use `php-logging-exceptions` and `php-database-migrations` when changes touch those areas.
+- Use `php-shared-hosting-deployment` when creating or reviewing GitHub Actions and release scripts for SSH-accessible shared hosting.
 - Use `php-clean-architecture` and `php-ddd-architecture` only when this project's instructions explicitly state those architectures.
 - Before finalizing, review new or changed helper methods with `php-readable-code`.
 - Before finalizing, review thrown/caught exceptions and logging decisions with `php-logging-exceptions`.

@@ -1,0 +1,137 @@
+# Replace every REPLACE_WITH_FULL_COMMIT_SHA value before enabling this workflow.
+name: Deploy release
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_production:
+        description: Promote the staging artifact to production
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shared-host-deployment
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ github.sha }}
+
+  staging:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: staging
+      url: ${{ vars.DEPLOYMENT_URL }}
+    env:
+      DEPLOYMENT_ARCHIVE: deployment-artifact/application.tar.gz
+      DEPLOYMENT_ARCHIVE_DIGEST: deployment-artifact/application.tar.gz.sha256
+      DEPLOYMENT_URL: ${{ vars.DEPLOYMENT_URL }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      PRIVATE_PATH: ${{ vars.PRIVATE_PATH }}
+      RELEASE_ID: staging-${{ needs.build.outputs.commit_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      SSH_HOST: ${{ vars.SSH_HOST }}
+      SSH_HOST_KEY: ${{ vars.SSH_HOST_KEY }}
+      SSH_PORT: ${{ vars.SSH_PORT }}
+
+    steps:
+      - name: Check out deployment scripts
+        uses: actions/checkout@REPLACE_WITH_FULL_COMMIT_SHA
+        with:
+          ref: ${{ needs.build.outputs.commit_sha }}
+
+      - name: Download release artifact
+        uses: actions/download-artifact@REPLACE_WITH_FULL_COMMIT_SHA
+        with:
+          name: php-release-${{ needs.build.outputs.commit_sha }}
+          path: deployment-artifact
+
+      - name: Verify release artifact
+        working-directory: deployment-artifact
+        run: sha256sum --check application.tar.gz.sha256
+
+      - name: Deploy to staging
+        id: deploy
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: bash deployment/deploy-release.sh
+
+      - name: Run staging smoke test
+        env:
+          EXPECTED_SMOKE_TEXT: ${{ vars.EXPECTED_SMOKE_TEXT }}
+        run: bash deployment/smoke-test.sh "$DEPLOYMENT_URL"
+
+  production:
+    needs:
+      - build
+      - staging
+    if: ${{ inputs.deploy_production }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ vars.DEPLOYMENT_URL }}
+    env:
+      DEPLOYMENT_ARCHIVE: deployment-artifact/application.tar.gz
+      DEPLOYMENT_ARCHIVE_DIGEST: deployment-artifact/application.tar.gz.sha256
+      DEPLOYMENT_URL: ${{ vars.DEPLOYMENT_URL }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      PRIVATE_PATH: ${{ vars.PRIVATE_PATH }}
+      RELEASE_ID: production-${{ needs.build.outputs.commit_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      SSH_HOST: ${{ vars.SSH_HOST }}
+      SSH_HOST_KEY: ${{ vars.SSH_HOST_KEY }}
+      SSH_PORT: ${{ vars.SSH_PORT }}
+
+    steps:
+      - name: Check out deployment scripts
+        uses: actions/checkout@REPLACE_WITH_FULL_COMMIT_SHA
+        with:
+          ref: ${{ needs.build.outputs.commit_sha }}
+
+      - name: Download the staging release artifact
+        uses: actions/download-artifact@REPLACE_WITH_FULL_COMMIT_SHA
+        with:
+          name: php-release-${{ needs.build.outputs.commit_sha }}
+          path: deployment-artifact
+
+      - name: Verify release artifact
+        working-directory: deployment-artifact
+        run: sha256sum --check application.tar.gz.sha256
+
+      - name: Deploy to production
+        id: deploy
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: bash deployment/deploy-release.sh
+
+      - name: Run production smoke test
+        env:
+          EXPECTED_SMOKE_TEXT: ${{ vars.EXPECTED_SMOKE_TEXT }}
+        run: bash deployment/smoke-test.sh "$DEPLOYMENT_URL"
+
+      - name: Approve release for rollback
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: bash deployment/release-control.sh approve
+
+      - name: Record production release
+        env:
+          PREVIOUS_RELEASE_ID: ${{ steps.deploy.outputs.previous_release_id }}
+        run: |
+          {
+            echo '### Production deployment passed'
+            echo
+            echo "- Active release: \`$RELEASE_ID\`"
+            echo "- Previous release: \`${PREVIOUS_RELEASE_ID:---none}\`"
+            echo "- URL: $DEPLOYMENT_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

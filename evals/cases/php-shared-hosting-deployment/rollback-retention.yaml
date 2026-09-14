@@ -1,0 +1,28 @@
+- description: php-shared-hosting-deployment:rollback-retention
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      Review this plan for a PHP application on shared hosting:
+
+      Before uploading, delete the oldest release by modification time to create space. After activation, delete every release except the newest two. If the production smoke test fails, automatically switch to the previous directory. The release also contains a migration that removes a column used by the old code.
+
+      Replace it with a safe rollback and retention policy.
+  assert:
+    - type: regex
+      value: '[Ee]xact|recorded.*(release|predecessor)|captured predecessor'
+    - type: regex
+      value: '[Ss]moke.*(before|prior).*prun|prun.*(after|only after).*smoke|only after.*smoke'
+    - type: regex
+      value: '[Pp]reserve (all|every)|must not delete|do not delete|stop.*capacity|capacity.*stop'
+    - type: regex
+      value: '[Dd]o not.*(modification time|oldest)|not.*(timestamp|age|directory order)'
+    - type: regex
+      value: 'compatible|expand-contract|backup.*restore|restore.*backup'
+    - type: llm-rubric
+      value: 'Pass only if the answer refuses deletion by age or ordering, stops deployment rather than deleting a recovery release when capacity is insufficient, records exact active and predecessor identities, performs pruning only after external smoke success and revalidation, preserves all releases on ambiguity, and rejects automatic code-only rollback across the incompatible destructive migration unless matching persistent state can be safely restored.'
+  metadata:
+    id: php-shared-hosting-deployment:rollback-retention
+    skill: php-shared-hosting-deployment
+    kind: apply

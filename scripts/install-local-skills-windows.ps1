@@ -18,7 +18,8 @@ $skills = @(
     "php-logging-exceptions",
     "php-application-security",
     "php-domain-clarification",
-    "php-database-migrations"
+    "php-database-migrations",
+    "php-shared-hosting-deployment"
 )
 
 New-Item -ItemType Directory -Force -Path $skillsDir | Out-Null

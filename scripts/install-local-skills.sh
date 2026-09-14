@@ -16,6 +16,7 @@ skills=(
   php-application-security
   php-domain-clarification
   php-database-migrations
+  php-shared-hosting-deployment
 )
 
 mkdir -p "$skills_dir"

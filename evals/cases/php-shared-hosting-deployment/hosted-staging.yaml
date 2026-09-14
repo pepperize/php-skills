@@ -1,0 +1,24 @@
+- description: php-shared-hosting-deployment:hosted-staging
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      A PHP project will deploy production to an SSH-accessible shared host. The proposed staging environment runs only inside GitHub Actions using the same PHP version, while production uses release directories and an atomic current symlink on the shared host. Review whether this staging design is sufficient and describe the required environment topology.
+  assert:
+    - type: regex
+      value: '[Ss]taging.*shared[- ]host|shared[- ]host.*staging'
+    - type: regex
+      value: 'same (provider|hosting|platform|release|deployment)|target shared-hosting provider'
+    - type: regex
+      value: 'CI runner.*(not|cannot)|not.*substitute|does not verify|insufficient'
+    - type: regex
+      value: 'PHP.*(runtime|extension)|web[- ]server|filesystem|permission|activation'
+    - type: regex
+      value: 'separate.*(account|root|database|credential|URL)|isolat'
+    - type: llm-rubric
+      value: 'Pass only if the answer requires staging and production to run on representative infrastructure at the target shared-hosting provider, uses the same release and activation mechanism, explains that runner-only staging cannot verify provider behavior, and isolates the environments with separate accounts or at least separate roots, private state, databases, credentials, and URLs.'
+  metadata:
+    id: php-shared-hosting-deployment:hosted-staging
+    skill: php-shared-hosting-deployment
+    kind: apply

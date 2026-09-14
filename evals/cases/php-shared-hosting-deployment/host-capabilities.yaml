@@ -1,0 +1,26 @@
+- description: php-shared-hosting-deployment:host-capabilities
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      A team asks to copy a symlink-based GitHub Actions deployment to a new shared host. The provider offers SFTP uploads but has not confirmed SSH command execution, symbolic links, atomic rename, a private path outside the document root, or whether PHP CLI matches PHP-FPM. Explain what must be established before implementation and what claims should be avoided meanwhile.
+  assert:
+    - type: regex
+      value: 'SSH command|command execution'
+    - type: regex
+      value: 'symbolic link|symlink'
+    - type: regex
+      value: 'atomic rename|atomic.*(switch|activation)'
+    - type: regex
+      value: 'private.*(outside|path)|outside.*document root'
+    - type: regex
+      value: 'CLI.*(FPM|web)|FPM.*CLI'
+    - type: regex
+      value: '[Dd]o not claim|cannot claim|avoid claiming|must not claim'
+    - type: llm-rubric
+      value: 'Pass only if the answer treats the deployment design as blocked on confirmed command execution and activation capabilities, checks a private persistent path plus PHP CLI/web parity, proposes only host-supported alternatives, and avoids claiming zero downtime or atomic activation before those properties are verified.'
+  metadata:
+    id: php-shared-hosting-deployment:host-capabilities
+    skill: php-shared-hosting-deployment
+    kind: apply

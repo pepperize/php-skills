@@ -1,0 +1,76 @@
+# Replace every REPLACE_WITH_FULL_COMMIT_SHA value before enabling this workflow.
+name: Build release artifact
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref to build
+        required: false
+        type: string
+    outputs:
+      commit_sha:
+        description: Resolved commit in the release artifact
+        value: ${{ jobs.build.outputs.commit_sha }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      commit_sha: ${{ steps.revision.outputs.commit_sha }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@REPLACE_WITH_FULL_COMMIT_SHA
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@REPLACE_WITH_FULL_COMMIT_SHA
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate Composer configuration
+        run: composer validate --no-check-publish
+
+      - name: Install development dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run project checks
+        run: composer test
+
+      - name: Install production dependencies
+        run: >-
+          composer install
+          --no-dev
+          --no-interaction
+          --no-progress
+          --prefer-dist
+          --optimize-autoloader
+
+      - name: Create release artifact
+        id: revision
+        run: |
+          set -euo pipefail
+          commit_sha="$(git rev-parse HEAD)"
+          tar -czf application.tar.gz --files-from=deployment/archive-files.txt
+          sha256sum application.tar.gz > application.tar.gz.sha256
+          printf 'commit_sha=%s\n' "$commit_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@REPLACE_WITH_FULL_COMMIT_SHA
+        with:
+          name: php-release-${{ steps.revision.outputs.commit_sha }}
+          path: |
+            application.tar.gz
+            application.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14

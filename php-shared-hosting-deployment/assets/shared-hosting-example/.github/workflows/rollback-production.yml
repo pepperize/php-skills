@@ -1,0 +1,57 @@
+# Replace every REPLACE_WITH_FULL_COMMIT_SHA value before enabling this workflow.
+name: Roll back production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Exact approved and currently compatible production release ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shared-host-deployment
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ vars.DEPLOYMENT_URL }}
+    env:
+      DEPLOYMENT_URL: ${{ vars.DEPLOYMENT_URL }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      PRIVATE_PATH: ${{ vars.PRIVATE_PATH }}
+      RELEASE_ID: ${{ inputs.release_id }}
+      SSH_HOST: ${{ vars.SSH_HOST }}
+      SSH_HOST_KEY: ${{ vars.SSH_HOST_KEY }}
+      SSH_PORT: ${{ vars.SSH_PORT }}
+
+    steps:
+      - name: Check out rollback scripts
+        uses: actions/checkout@REPLACE_WITH_FULL_COMMIT_SHA
+
+      - name: Activate approved release
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: bash deployment/release-control.sh rollback
+
+      - name: Run production smoke test
+        env:
+          EXPECTED_SMOKE_TEXT: ${{ vars.EXPECTED_SMOKE_TEXT }}
+        run: bash deployment/smoke-test.sh "$DEPLOYMENT_URL"
+
+      - name: Record rollback
+        run: |
+          {
+            echo '### Production rollback passed'
+            echo
+            echo "- Active release: \`$RELEASE_ID\`"
+            echo "- URL: $DEPLOYMENT_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -15,6 +15,7 @@ The initial suite focuses on rules that are concrete enough to evaluate consiste
 - `php-clean-architecture`: respecting the activation guard.
 - `php-ddd-architecture`: domain repository ownership, retrieval naming, absence behavior, infrastructure implementation boundaries, controller-to-view-service boundaries, form-validation middleware, and Slim route-parser injection.
 - `php-database-migrations`: selecting Laravel, Doctrine Migrations, or Phinx without adding a second migration framework, timestamp naming, applied migration integrity, and application boot verification.
+- `php-shared-hosting-deployment`: representative shared-host staging, exact staging-to-production artifact promotion, step-scoped secrets, immutable action pins, host-capability checks, rollback compatibility, and fail-closed release retention.
 
 ## Assertions
 

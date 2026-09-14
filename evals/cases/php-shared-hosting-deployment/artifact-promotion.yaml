@@ -1,0 +1,24 @@
+- description: php-shared-hosting-deployment:artifact-promotion
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      Design the build and deployment flow for a PHP application on an SSH-accessible shared host. The proposed flow runs Composer and tests for staging, then checks out the same commit and runs Composer again in the production job. Correct the flow and explain how production should identify what staging accepted.
+  assert:
+    - type: regex
+      value: '[Bb]uild (and test )?(one|once)|[Bb]uild once|one production(-dependency)? artifact'
+    - type: regex
+      value: '[Ee]xact (same |tested |staging )?artifact|same artifact'
+    - type: regex
+      value: '[Dd]o not rebuild|must not rebuild|instead of rebuilding|without rebuilding'
+    - type: regex
+      value: 'commit SHA|commit hash|source commit'
+    - type: regex
+      value: 'SHA-?256|digest|attestation|provenance'
+    - type: llm-rubric
+      value: 'Pass only if the answer builds and tests one production artifact, deploys that artifact to staging, promotes the exact accepted artifact to production without another Composer build, binds it to the source commit, and verifies artifact integrity with a digest or provenance mechanism.'
+  metadata:
+    id: php-shared-hosting-deployment:artifact-promotion
+    skill: php-shared-hosting-deployment
+    kind: apply

@@ -1,0 +1,9 @@
+bin
+composer.json
+composer.lock
+config
+migrations
+public
+src
+templates
+vendor
