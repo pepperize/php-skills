@@ -37,7 +37,7 @@
     - type: contains
       value: PrivacyPolicyViewService
     - type: regex
-      value: 'function\s+fetchPage\s*\([^)]*Locale[^)]*\)\s*:\s*PrivacyPolicyPageViewModel'
+      value: 'function\s+fetchPage\s*\([^)]*\)\s*:\s*PrivacyPolicyPageViewModel'
     - type: regex
       value: 'list<PrivacyPolicyRecipientViewModel>'
     - type: regex

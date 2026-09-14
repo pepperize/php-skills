@@ -17,7 +17,7 @@
     - type: regex
       value: '[Pp]reserve (all|every)|must not delete|do not delete|stop.*capacity|capacity.*stop'
     - type: regex
-      value: '[Dd]o not.*(modification time|oldest)|not.*(timestamp|age|directory order)'
+      value: '(?:[Dd]o not|[Nn]ever|not).*(?:modification time|mtime|oldest|timestamp|age|directory order)|(?:select|selected|choose|chosen).*recorded release identity'
     - type: regex
       value: 'compatible|expand-contract|backup.*restore|restore.*backup'
     - type: llm-rubric

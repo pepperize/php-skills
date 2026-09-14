@@ -14,7 +14,9 @@
       controller, ViewService or shared ViewModel factory, application/container
       registration, and a focused PHPUnit test for URL generation. Preserve the
       route name and arguments, and do not introduce a custom URL-generator
-      abstraction.
+      abstraction. Use a concrete typed page ViewModel in the primary
+      implementation and its test; do not return an array or present an
+      array-based version as the default.
     code: |
       final class HomeController
       {
@@ -36,10 +38,8 @@
       value: 'private\s+RouteParserInterface\s+\$routeParser'
     - type: regex
       value: 'function\s+getHome\s*\(\s*ResponseInterface\s+\$response'
-    - type: contains
-      value: fetchPage
-    - type: contains
-      value: HomePageViewModel
+    - type: regex
+      value: 'function\s+(?:fetch|create)Page\s*\([^)]*\)\s*:\s*\w+(?:Page)?ViewModel'
     - type: contains
       value: RouteParserInterface::class
     - type: contains
@@ -47,7 +47,7 @@
     - type: contains
       value: createMock(RouteParserInterface::class)
     - type: llm-rubric
-      value: 'Pass only if a frontend ViewService or shared ViewModel factory receives Slim RouteParserInterface through its constructor, uses it with route name home and locale argument, and the otherwise-unused request parameter is removed from the controller. The ViewService must return a complete HomePageViewModel, while the controller keeps the response parameter, calls fetchPage(), renders the returned page, and completes the response. Infrastructure composition must bind RouteParserInterface once from the application route collector using the existing PHP-DI container. The unit test must mock RouteParserInterface at the presentation collaborator that owns URL generation without constructing a request or RouteContext solely for that purpose. Fail if the controller assembles the page, a custom URL-generator abstraction is introduced, or any route name or argument changes.'
+      value: 'Pass only if a frontend ViewService or shared ViewModel factory receives Slim RouteParserInterface through its constructor, uses it with route name home and locale argument, and the otherwise-unused request parameter is removed from the controller. The ViewService must return a complete typed page-specific ViewModel, while the controller keeps the response parameter, calls that collaborator once to obtain the page, renders the returned page, and completes the response. Accept fetchPage() or createPage(); repository or external I/O would require fetchPage(), but URL construction alone does not. Infrastructure composition must bind RouteParserInterface once from the application route collector using the existing PHP-DI container. The unit test must mock RouteParserInterface at the presentation collaborator that owns URL generation without constructing a request or RouteContext solely for that purpose. Fail if the controller assembles the page, a custom URL-generator abstraction is introduced, or any route name or argument changes.'
   metadata:
     id: php-ddd-architecture:slim-route-parser-injection
     skill: php-ddd-architecture

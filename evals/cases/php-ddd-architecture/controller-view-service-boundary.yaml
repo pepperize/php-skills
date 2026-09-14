@@ -42,17 +42,17 @@
     - type: contains
       value: PrivacyPolicyContentViewModel
     - type: regex
-      value: 'function\s+fetchPage\s*\([^)]*Locale[^)]*\)\s*:\s*PrivacyPolicyPageViewModel'
+      value: 'function\s+fetchPage\s*\([^)]*\)\s*:\s*PrivacyPolicyPageViewModel'
     - type: regex
       value: 'private\s+PrivacyPolicyViewService\s+\$\w+'
     - type: contains
       value: PrivacyPolicyPageViewModel
-    - type: contains
-      value: SiteHeaderViewModelFactory
+    - type: regex
+      value: '\b\w*HeaderViewModelFactory\b'
     - type: contains
       value: LegalNavigationViewModelFactory
     - type: regex
-      value: '\[''page''\s*=>\s*\$page\]'
+      value: '\[\s*''page''\s*=>\s*\$page\s*,?\s*\]'
     - type: llm-rubric
       value: 'Pass only if repository dependencies and domain-to-view mapping move into a frontend ViewService, the service returns the complete typed PrivacyPolicyPageViewModel containing no domain objects, shared header and legal-navigation ViewModels come from focused presentation collaborators, and the controller only adapts HTTP input, calls fetchPage(), gives the returned page to the renderer, and completes the response. The ViewService may receive typed request-derived values such as Locale and presentation collaborators may use RouteParserInterface, but requests, responses, and renderers must not enter the ViewService. Fail if the controller still depends on a repository, constructs metadata or page-component ViewModels, receives a partial content ViewModel from the service, passes domain entities to the template, flattens the page into render keys, or calls presentation data View or ViewData.'
   metadata:

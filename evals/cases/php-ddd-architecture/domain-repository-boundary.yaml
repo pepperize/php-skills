@@ -12,7 +12,10 @@
       PrivacyPolicyRecipientProvider returns the recipients used for inquiry forwarding, and
       PrivacyPolicyVersionProvider returns one version. The values currently come from source code,
       memory, and a file. Show the repository interfaces, their placement, method names, absence
-      behavior, implementation placement, and application dependency direction.
+      behavior, implementation placement, and application dependency direction. Use minimal
+      executable method bodies for the absence behavior; do not replace required behavior with
+      placeholder comments. Name the shared inquiry-delivery concept ForwardingRecipient and its
+      repository ForwardingRecipientRepository; do not prefix either with PrivacyPolicy.
     code: |
       namespace Example\App\Frontend\PrivacyPolicy;
 
@@ -48,7 +51,7 @@
     - type: regex
       value: 'throw\s+new\s+NotFoundException'
     - type: regex
-      value: 'return\s+\[\s*\]\s*;'
+      value: 'function\s+findAll\s*\([^)]*\)\s*:\s*array\s*\{[^}]*\n\s*return\s+(?:\[\s*\]|\$this->\w+|\$\w+)\s*;'
     - type: icontains
       value: Infrastructure
     - type: not-regex
@@ -56,9 +59,9 @@
     - type: not-regex
       value: 'function\s+(operator|activeRecipients|version|findLegalOperator|loadPrivacyPolicyVersionFromFile)\s*\('
     - type: not-regex
-      value: '\?\s*(LegalOperator|PrivacyPolicyVersion)\b'
+      value: 'function\s+find\s*\([^)]*\)\s*:\s*\?\s*(LegalOperator|PrivacyPolicyVersion)\b'
     - type: llm-rubric
-      value: 'Pass only if the result places repository interfaces and returned models in their owning Domain modules, renames the shared privacy recipient to the forwarding-recipient domain concept, places storage-specific implementations in Infrastructure, makes application code depend on domain interfaces, uses find() plus NotFoundException for singular objects, and uses findAll() plus an empty list for collections. Fail if storage type determines whether the abstraction is called a repository, if a repository remains under App/Frontend, or if Domain depends on App or Infrastructure.'
+      value: 'Pass only if the result places repository interfaces and returned models in their owning Domain modules, renames the shared privacy recipient to the forwarding-recipient domain concept, places storage-specific implementations in Infrastructure, makes application code depend on domain interfaces, uses find() plus NotFoundException for singular objects, and uses findAll() plus an empty list for collections. The shown findAll() implementation must have an executable return path that works for empty storage; a comment describing return [] is insufficient. Fail if storage type determines whether the abstraction is called a repository, if a repository remains under App/Frontend, or if Domain depends on App or Infrastructure.'
   metadata:
     id: php-ddd-architecture:domain-repository-boundary
     skill: php-ddd-architecture
