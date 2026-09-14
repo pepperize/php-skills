@@ -65,6 +65,43 @@ $sut->load($locales);
 - Name PHPUnit test classes and files with a `Test` suffix. Use the integration-test directory to communicate scope rather than adding redundant `IntegrationTest` suffixes.
 - Tests using a framework kernel or container, an HTTP test client, containers, real repositories, or other framework/infrastructure boundaries belong under the project's integration-test directory.
 
+## Authentication Integration Coverage
+
+When authentication behavior changes, cover the affected end-to-end boundary with realistic storage, middleware, cookies, and a controllable clock where applicable:
+
+- correct password, wrong password, unknown account, unverified account, and disabled account;
+- identical public status, redirect, and message for account-sensitive credential failures;
+- client and HMAC-derived account rate-limit boundaries, bounded lockout or backoff, successful recovery, and fail-closed limiter failure;
+- dummy-hash verification on unknown accounts without brittle wall-clock comparisons;
+- session-ID rotation after login and privilege changes;
+- idle expiry, absolute expiry, logout invalidation, and security-version invalidation;
+- `Secure`, `HttpOnly`, `SameSite`, `Path`, expiry, and authenticated-response cache headers;
+- verification and reset token syntax, expiry, single use, atomic concurrent consumption, outstanding-token bounds, and purpose separation;
+- sibling reset-token and active-session invalidation after password reset;
+- acceptance of the full supported password length, including Unicode input and input beyond bcrypt's 72-byte boundary when bcrypt is used; and
+- password-hash upgrade after successful verification when algorithm or cost settings change.
+
+Do not assert that known and unknown account paths take the same number of milliseconds. Assert equal public output and the intended orchestration, such as real-or-dummy hash verification, limiter operations, and queued notification behavior. Use a controllable clock for expiry and backoff boundaries.
+
+Example names include `givenUnknownAccount_shouldReturnGenericLoginFailure`, `givenExpiredAbsoluteSession_shouldRejectRequest`, and `givenConsumedResetToken_shouldRejectSecondUse`.
+
+## Authorization Route Inventory
+
+When authorization behavior or route registration changes, add or update an integration test that inventories registered routes and resolved callables.
+
+Verify that:
+
+- methods with `RequiresPermission` have authentication and attribute-authorization middleware;
+- methods with `RequiresAuthentication` have authentication middleware;
+- authenticated state-changing browser routes have CSRF middleware;
+- public capability-token routes appear only in the explicit public allowlist;
+- unresolved callables and missing declarations in protected pipelines fail closed;
+- every role grants exactly the expected permission values;
+- repeated permission attributes use the documented AND semantics;
+- anonymous access follows the authentication response contract;
+- an authenticated identity without a permission receives `403 Forbidden` before protected collaborators run; and
+- self-scoped or tenant-scoped decisions derive identity from `CurrentUser`, not request-controlled identifiers.
+
 ## Persistent Test Data
 
 - Arrange persistent state through the narrowest existing API that owns the responsibility for that state.
@@ -84,6 +121,7 @@ For database, configuration, migration, dependency, template, or resource change
 - Mapper, factory, and small service changes: focused PHPUnit tests first.
 - Use case and adapter orchestration changes: affected unit test classes.
 - Controller, authorization, and event-listener changes: relevant integration tests.
+- Authentication, session, reset-token, role mapping, and protected-route changes: focused security integration tests, including the route inventory when composition changes.
 - Persistence, object storage, file parsing, and infrastructure boundaries: boundary integration tests plus focused unit tests around helper collaborators when present.
 
 ## Verification Scope Review

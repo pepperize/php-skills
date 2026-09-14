@@ -8,14 +8,17 @@ The cases load each skill from the repository's existing `SKILL.md` files throug
 
 The initial suite focuses on rules that are concrete enough to evaluate consistently:
 
-- `php-testing-style`: PHPUnit data providers, assertions, test naming, and `$actual` result variables.
+- `php-agent-instructions`: authentication, authorization, and deployment skill routing in the installed self-review block.
+- `php-testing-style`: PHPUnit data providers, assertions, test naming, `$actual` result variables, authentication integration coverage, and authorization route inventories.
 - `php-readable-code`: avoiding production API that exists only for tests, naming costly data retrieval operations with `fetch...`, and keeping composed values visible to IDE debuggers.
 - `php-templating`: typed page ViewModels, Slim PHP-View selection and partials, explicit HTML escaping versus plain-text output, source-text translation keys, `_t()`, ICU pluralization, per-render locale isolation, and complete locale-specific email-body templates.
 - `php-domain-clarification`: asking questions before coding ambiguous domain scoping.
 - `php-clean-architecture`: respecting the activation guard.
-- `php-ddd-architecture`: domain repository ownership, retrieval naming, absence behavior, infrastructure implementation boundaries, controller-to-view-service boundaries, form-validation middleware, and Slim route-parser injection.
+- `php-ddd-architecture`: domain repository ownership, retrieval naming, absence behavior, infrastructure implementation boundaries, controller-to-view-service boundaries, authentication and authorization boundaries, form-validation middleware, and Slim route-parser injection.
 - `php-database-migrations`: selecting Laravel, Doctrine Migrations, or Phinx without adding a second migration framework, timestamp naming, applied migration integrity, and application boot verification.
-- `php-rbac-authorization`: method-local controller permission attributes and independent read/write capabilities.
+- `php-authentication-security`: Mezzio authentication composition, password policy and hashing, enumeration-safe login throttling, recovery-token lifecycle, and revocable session lifecycle.
+- `php-logging-exceptions`: security-event structure, sensitive-field redaction, pseudonymous correlation, and abuse controls.
+- `php-rbac-authorization`: typed Laminas/Mezzio RBAC boundaries, method-local controller permissions, protected-route composition, independent capabilities, and privilege-change freshness.
 - `php-shared-hosting-deployment`: representative shared-host staging, exact staging-to-production artifact promotion, step-scoped secrets, immutable action pins, host-capability checks, rollback compatibility, and fail-closed release retention.
 
 ## Assertions

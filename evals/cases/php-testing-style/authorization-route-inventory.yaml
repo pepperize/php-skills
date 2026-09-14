@@ -1,0 +1,40 @@
+- description: php-testing-style:authorization-route-inventory
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-testing-style/SKILL.md
+    project_instructions: |
+      The project uses PHPUnit and registers explicit middleware chains for
+      Mezzio routes. Repeated permission attributes have AND semantics.
+    task: |
+      Design the integration coverage for a route-registration change that adds
+      permission attributes, authenticated-only logout, an authenticated POST
+      action, and a public password-reset token endpoint. State what the route
+      inventory and behavioral authorization tests must prove.
+  assert:
+    - type: regex
+      value: 'route[- ]inventory|inventory.{0,80}routes'
+    - type: contains
+      value: RequiresPermission
+    - type: contains
+      value: RequiresAuthentication
+    - type: regex
+      value: 'CSRF|CsrfMiddleware'
+    - type: regex
+      value: 'public allowlist|public-route allowlist|explicit public'
+    - type: regex
+      value: 'unresolved callable|missing declaration'
+    - type: regex
+      value: 'fail closed|deny|configuration error'
+    - type: regex
+      value: 'AND'
+    - type: contains
+      value: '403'
+    - type: contains
+      value: CurrentUser
+    - type: llm-rubric
+      value: 'Pass only if a route-inventory integration test resolves every registered callable and verifies permission methods have authentication plus attribute authorization, authenticated-only methods have authentication, state-changing authenticated browser routes have CSRF, and public token routes occur only in an explicit allowlist; unresolved callables and missing declarations fail closed; exact role mappings and repeated-attribute AND semantics are covered; anonymous behavior follows the authentication contract; a denied identity receives 403 before protected collaborators run; and self/tenant scope derives from CurrentUser rather than request-controlled identifiers.'
+  metadata:
+    id: php-testing-style:authorization-route-inventory
+    skill: php-testing-style
+    kind: apply

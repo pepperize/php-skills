@@ -1,0 +1,46 @@
+- description: php-rbac-authorization:typed-laminas-rbac-boundary
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-rbac-authorization/SKILL.md
+    project_instructions: |
+      This is a compatible Mezzio application using Mezzio Authorization.
+    task: |
+      Replace this custom authorization model. Show the preferred packages and
+      application-owned contracts, including the permission attribute declaration.
+      The application service must not depend on framework RBAC types.
+    code: |
+      final class RoleGraph
+      {
+          public function allows(array $roles, string $permission): bool
+          {
+              // custom role inheritance and permission traversal
+          }
+      }
+
+      #[RequiresPermission('owner.write')]
+      public function postOwner(): ResponseInterface
+      {
+          // ...
+      }
+  assert:
+    - type: contains
+      value: laminas/laminas-permissions-rbac
+    - type: contains
+      value: mezzio/mezzio-authorization-rbac
+    - type: contains
+      value: 'enum Permission'
+    - type: contains
+      value: 'interface AuthorizationService'
+    - type: contains
+      value: CurrentUser
+    - type: regex
+      value: 'Attribute::TARGET_METHOD\s*\|\s*Attribute::IS_REPEATABLE'
+    - type: regex
+      value: 'function\s+__construct\s*\(\s*public\s+Permission\s+\$permission'
+    - type: llm-rubric
+      value: 'Pass only if the answer replaces the custom role graph with laminas/laminas-permissions-rbac and the Mezzio RBAC adapter, confines their concrete types to infrastructure, exposes application-owned AuthorizationService, Permission, CurrentUser, and authorization attributes, and defines RequiresPermission as typed, method-only, and repeatable with a Permission constructor argument rather than a raw string or role.'
+  metadata:
+    id: php-rbac-authorization:typed-laminas-rbac-boundary
+    skill: php-rbac-authorization
+    kind: apply

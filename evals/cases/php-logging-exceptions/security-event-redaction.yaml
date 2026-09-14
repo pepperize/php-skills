@@ -1,0 +1,40 @@
+- description: php-logging-exceptions:security-event-redaction
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-logging-exceptions/SKILL.md
+    task: |
+      Review this authentication and authorization logging. Replace sensitive
+      fields and define useful event records for login failure, authorization
+      denial, and a role grant. Include abuse controls for repetitive events.
+    code: |
+      $logger->warning('Login failed', [
+          'email' => $request->getParsedBody()['email'],
+          'password' => $request->getParsedBody()['password'],
+          'ip' => $request->getServerParams()['REMOTE_ADDR'],
+          'session_id' => session_id(),
+      ]);
+
+      $logger->warning('Denied', [
+          'permission' => $permission,
+          'reset_token' => $request->getQueryParams()['token'] ?? null,
+      ]);
+  assert:
+    - type: regex
+      value: 'stable event|event name|event[_ .-](?:name|type)'
+    - type: regex
+      value: 'actor.{0,80}(account )?ID|affected.{0,80}(account )?ID|account[_ ]id'
+    - type: regex
+      value: 'reason code|reason[_ ]code'
+    - type: regex
+      value: 'keyed|HMAC|pseudonymous'
+    - type: regex
+      value: '[Nn]ever log|[Mm]ust not log|[Rr]emove|[Rr]edact'
+    - type: regex
+      value: 'rate[- ]limit|aggregate'
+    - type: llm-rubric
+      value: 'Pass only if the answer defines stable security-event names with outcome, reason code, timestamp, actor account ID when authenticated, affected account ID when applicable, and permission or role identifiers; replaces unauthenticated client/account correlation with keyed pseudonymous identifiers that support rotation; removes plaintext passwords, hashes, bearer/reset tokens, session IDs, CSRF tokens, raw login identifiers, and raw IP addresses; encodes remaining dynamic fields for the log format; and rate-limits or aggregates repetitive login and denial events.'
+  metadata:
+    id: php-logging-exceptions:security-event-redaction
+    skill: php-logging-exceptions
+    kind: apply

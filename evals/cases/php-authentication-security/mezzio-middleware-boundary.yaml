@@ -1,0 +1,42 @@
+- description: php-authentication-security:mezzio-middleware-boundary
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-authentication-security/SKILL.md
+    project_instructions: |
+      This application uses Mezzio, PSR-15 middleware, and server-side sessions.
+    task: |
+      Replace the custom authentication composition. Show the preferred package
+      choices, protected-route middleware order, and the type passed from the
+      web boundary into application code.
+    code: |
+      $app->get('/account', [
+          CustomAuthorizationMiddleware::class,
+          CustomCookieAuthenticationMiddleware::class,
+          AccountController::class,
+      ]);
+
+      final class AccountController
+      {
+          public function getAccount(UserInterface $mezzioUser): ResponseInterface
+          {
+              return $this->showAccount->execute($mezzioUser);
+          }
+      }
+  assert:
+    - type: contains
+      value: mezzio/mezzio-authentication
+    - type: contains
+      value: mezzio/mezzio-authentication-session
+    - type: regex
+      value: 'SessionMiddleware::class[\s\S]{0,240}AuthenticationMiddleware::class[\s\S]{0,240}(AttributeAuthorizationMiddleware|AuthorizationMiddleware)::class'
+    - type: contains
+      value: CurrentUser
+    - type: regex
+      value: 'map|translate|factory|createFromRequest'
+    - type: llm-rubric
+      value: 'Pass only if the answer uses the maintained Mezzio authentication packages for this compatible session-backed application, orders session before authentication and authentication before authorization, keeps Mezzio and session types at infrastructure or web boundaries, maps the framework identity to an application-owned CurrentUser, and keeps the application use case free of Mezzio UserInterface, requests, and session objects.'
+  metadata:
+    id: php-authentication-security:mezzio-middleware-boundary
+    skill: php-authentication-security
+    kind: apply

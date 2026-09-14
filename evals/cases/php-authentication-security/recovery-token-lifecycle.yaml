@@ -1,0 +1,43 @@
+- description: php-authentication-security:recovery-token-lifecycle
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-authentication-security/SKILL.md
+    task: |
+      Replace this password-reset token design and describe the complete request
+      and consumption flow. Include storage, validation, expiry, concurrency,
+      account-enumeration behavior, browser privacy, and the state invalidated
+      after a successful reset.
+    code: |
+      $token = uniqid($account->email(), true);
+      $this->tokens->save($account->id(), $token);
+      $this->mailer->sendReset($account->email(), '/reset?token=' . $token);
+
+      public function reset(string $token, string $newPassword): void
+      {
+          $account = $this->tokens->findAccount($token);
+          $this->accounts->replacePassword($account, $newPassword);
+      }
+  assert:
+    - type: regex
+      value: 'random_bytes\s*\(\s*32\s*\)'
+    - type: regex
+      value: '(digest|hash).{0,80}(store|persist)|(?:store|persist).{0,80}(digest|hash)'
+    - type: regex
+      value: 'expir|purpose'
+    - type: regex
+      value: 'atomic|transaction|single[- ]use|only one.*succeed'
+    - type: regex
+      value: 'same public|generic.{0,80}(status|message|response)|enumerat'
+    - type: contains
+      value: 'Referrer-Policy'
+    - type: regex
+      value: 'sibling.{0,80}token|all.{0,80}(reset )?tokens'
+    - type: regex
+      value: '(invalidate|revoke).{0,100}sessions?|sessions?.{0,100}(invalidate|revoke)'
+    - type: llm-rubric
+      value: 'Pass only if reset tokens use at least 32 random bytes and URL-safe encoding, only a cryptographic digest is stored, syntax and decoded length are checked before persistence lookup, tokens have an explicit purpose and short expiry, consumption and the password change are atomic and single-use, outstanding tokens are replaced or bounded, reset requests have enumeration-safe public behavior and client plus HMAC-derived account limiting, landing pages use Referrer-Policy: no-referrer without third-party resources, and success invalidates sibling reset tokens and every active session without automatically signing the user in.'
+  metadata:
+    id: php-authentication-security:recovery-token-lifecycle
+    skill: php-authentication-security
+    kind: apply

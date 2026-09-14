@@ -1,0 +1,50 @@
+- description: php-authentication-security:login-enumeration-throttling
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-authentication-security/SKILL.md
+    task: |
+      Redesign this login flow so it resists account enumeration and automated
+      guessing. Cover limiter keys, known and unknown accounts, unavailable
+      limiter state, public responses, password verification, and recovery
+      after a successful login.
+    code: |
+      public function login(string $email, string $password): ResponseInterface
+      {
+          $account = $this->accounts->findByEmail($email);
+
+          if ($account === null) {
+              return $this->responses->notFound('Unknown account');
+          }
+
+          if (!$this->limiter->available()) {
+              return $this->checkPassword($account, $password);
+          }
+
+          if ($this->limiter->tooManyAttempts($email)) {
+              return $this->responses->tooManyRequests($email);
+          }
+
+          return $this->checkPassword($account, $password);
+      }
+  assert:
+    - type: regex
+      value: 'client.{0,100}(key|bucket|limit)|(?:key|bucket|limit).{0,100}client'
+    - type: regex
+      value: 'hash_hmac|HMAC'
+    - type: regex
+      value: 'known and unknown|known.*unknown|unknown.*known'
+    - type: regex
+      value: 'dummy hash|dummy-hash|precomputed dummy'
+    - type: contains
+      value: '429'
+    - type: contains
+      value: '503'
+    - type: regex
+      value: 'clear|reduce|reset'
+    - type: llm-rubric
+      value: 'Pass only if the design limits every attempt by both a trusted-client key and an HMAC-derived normalized account key without storing raw login identifiers; applies the account path to known and unknown accounts; performs real-or-dummy password verification before ordinary failure; gives unknown, wrong-password, disabled, and unverified accounts the same public result; uses generic 429 responses for limited buckets; fails closed with a temporary 503 when required limiter state is unavailable; uses temporary bounded backoff or lockout; and clears or reduces failures after success.'
+  metadata:
+    id: php-authentication-security:login-enumeration-throttling
+    skill: php-authentication-security
+    kind: apply

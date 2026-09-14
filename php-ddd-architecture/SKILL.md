@@ -50,6 +50,35 @@ In DDD projects, treat framework configuration as infrastructure, not applicatio
 - Use typed configuration holders only for property binding. Name them according to the project's established convention, keep them plain, validate required values with the project's boundary validation mechanism, and mark optional values with the project's nullability convention.
 - If the framework or a third-party package owns a binding, document the exception at the class and keep the workaround local to infrastructure configuration.
 
+## Authentication And Authorization Boundaries
+
+In DDD projects, keep authentication mechanisms and the RBAC engine outside the domain and application model.
+
+- Keep concrete Mezzio authentication and authorization interfaces, middleware, request attributes, session adapters, Laminas RBAC objects, factories, and package configuration in infrastructure or the web adapter.
+- Let the application own `CurrentUser`, `AuthorizationService`, the `Permission` enum, and typed `RequiresAuthentication` and `RequiresPermission` attribute contracts.
+- Map the Mezzio identity to `CurrentUser` at the web boundary. Do not pass `Mezzio\Authentication\UserInterface`, a PSR-7 request, session objects, or `Laminas\Permissions\Rbac\Rbac` into application or domain services.
+- Apply authentication and permission attributes only to public controller methods. Application and domain services must remain free of controller authorization metadata.
+- Keep role-to-permission configuration in infrastructure while keeping permission names in the application vocabulary.
+- Keep ownership, tenant scope, lifecycle rules, and privilege-change invariants in application policies or domain services where the relevant objects and transaction are available.
+- Use the RBAC result for the coarse capability and a separate application or domain decision for object scope. Do not encode aggregate identifiers into permission strings.
+
+For example, translate the framework identity once and call application code with the application-owned type:
+
+```php
+#[RequiresPermission(Permission::BookingWrite)]
+public function postBooking(ServerRequestInterface $request): ResponseInterface
+{
+    $currentUser = $this->currentUserFactory->createFromRequest($request);
+    $command = $this->bookingCommandFactory->createFromRequest($request);
+
+    $this->changeBooking->execute($currentUser, $command);
+
+    return $this->responseFactory->createSuccess();
+}
+```
+
+The use case may apply booking ownership or tenant rules with domain data. It must not inspect controller attributes or depend on the Laminas RBAC engine.
+
 ## Web Boundaries
 
 - Namespaces should expose the architectural side when known: end-user-facing code under frontend namespaces, backend/admin code under backend namespaces.

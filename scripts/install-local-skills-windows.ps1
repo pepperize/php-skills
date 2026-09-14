@@ -17,6 +17,7 @@ $skills = @(
     "php-agent-instructions",
     "php-logging-exceptions",
     "php-application-security",
+    "php-authentication-security",
     "php-rbac-authorization",
     "php-domain-clarification",
     "php-database-migrations",

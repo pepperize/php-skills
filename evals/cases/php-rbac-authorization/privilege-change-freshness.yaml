@@ -1,0 +1,40 @@
+- description: php-rbac-authorization:privilege-change-freshness
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-rbac-authorization/SKILL.md
+    task: |
+      Review this role-change and session design. Require grants and revocations
+      to take effect promptly, preserve the invariant that at least one active
+      administrator remains, and state the logging and session consequences.
+    code: |
+      public function login(Account $account): void
+      {
+          $_SESSION['roles'] = $account->roles();
+      }
+
+      public function revokeAdministrator(AccountId $accountId): void
+      {
+          $account = $this->accounts->find($accountId);
+          $account->removeRole(Role::Administrator);
+          $this->accounts->save($account);
+      }
+  assert:
+    - type: regex
+      value: 'next request|every request'
+    - type: regex
+      value: 'reload.{0,100}roles|security[_ -]version|session[_ -]version'
+    - type: regex
+      value: 'at least one active administrator'
+    - type: regex
+      value: 'transaction|transactionally'
+    - type: regex
+      value: 'log|audit'
+    - type: regex
+      value: 'rotate|invalidate|revoke.{0,80}session|session.{0,80}(rotate|invalidate|revoke)'
+    - type: llm-rubric
+      value: 'Pass only if role grants and revocations are effective on the next request by reloading roles or comparing an account-owned security version, stale long-lived session roles are rejected, the last-active-administrator invariant is checked transactionally in the application or domain operation, successful and rejected privilege changes are recorded through the security logging boundary, and affected sessions are rotated or invalidated consistently with the authentication policy.'
+  metadata:
+    id: php-rbac-authorization:privilege-change-freshness
+    skill: php-rbac-authorization
+    kind: apply

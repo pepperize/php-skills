@@ -1,0 +1,54 @@
+- description: php-ddd-architecture:authentication-authorization-boundary
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-ddd-architecture/SKILL.md
+    project_instructions: |
+      This project explicitly uses Domain-Driven Design. Mezzio and Laminas are
+      infrastructure dependencies. Application code lives under Application,
+      HTTP adapters under Web, and technical adapters under Infrastructure.
+    task: |
+      Refactor this protected booking change so framework authentication and
+      RBAC types remain at the web or infrastructure boundary. Preserve a coarse
+      booking-write capability and a separate tenant/ownership decision.
+    code: |
+      final class ChangeBooking
+      {
+          public function __construct(private Rbac $rbac)
+          {
+          }
+
+          public function execute(
+              UserInterface $mezzioUser,
+              ServerRequestInterface $request,
+              BookingId $bookingId,
+          ): void {
+              if (!$this->rbac->isGranted(
+                  $mezzioUser->getRoles(),
+                  'booking.' . $bookingId . '.write',
+              )) {
+                  throw new ForbiddenException();
+              }
+          }
+      }
+  assert:
+    - type: contains
+      value: CurrentUser
+    - type: contains
+      value: AuthorizationService
+    - type: regex
+      value: 'enum\s+Permission|Permission (enum|type)'
+    - type: contains
+      value: RequiresPermission
+    - type: regex
+      value: 'Permission::BookingWrite|BookingWrite'
+    - type: regex
+      value: 'ownership|tenant'
+    - type: regex
+      value: 'web boundary|web adapter|controller'
+    - type: llm-rubric
+      value: 'Pass only if Mezzio UserInterface, PSR-7 requests, session types, and Laminas Rbac remain outside application/domain services; the web boundary maps identity to an application-owned CurrentUser; the controller method declares a typed BookingWrite capability; application code depends only on application-owned AuthorizationService, Permission, and CurrentUser contracts; and ownership or tenant scope is enforced separately in an application policy or domain service without embedding booking IDs in permission strings.'
+  metadata:
+    id: php-ddd-architecture:authentication-authorization-boundary
+    skill: php-ddd-architecture
+    kind: apply

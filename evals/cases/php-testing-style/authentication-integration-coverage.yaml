@@ -1,0 +1,38 @@
+- description: php-testing-style:authentication-integration-coverage
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-testing-style/SKILL.md
+    project_instructions: |
+      The project uses PHPUnit and a controllable Clock. Authentication is
+      session-backed with persistent accounts, reset tokens, and limiter state.
+    task: |
+      Propose focused tests for a change that adds login throttling, password
+      hash upgrades, reset-token consumption, and idle/absolute session expiry.
+      Choose unit or integration boundaries, cover account-enumeration behavior,
+      and explain how timing behavior should be asserted.
+  assert:
+    - type: regex
+      value: 'tests/Integration|integration tests?'
+    - type: regex
+      value: 'correct password|wrong password'
+    - type: regex
+      value: 'unknown account|unverified account|disabled account'
+    - type: regex
+      value: 'same public|identical public|generic.{0,80}(response|status|message)'
+    - type: regex
+      value: 'dummy hash|dummy-hash'
+    - type: regex
+      value: 'password_needs_rehash|password[- ]hash upgrade|hash upgrade|rehash'
+    - type: regex
+      value: 'single[- ]use|second use|concurrent'
+    - type: regex
+      value: 'idle.{0,100}absolute|absolute.{0,100}idle'
+    - type: regex
+      value: 'controllable clock|test clock|fake clock'
+    - type: llm-rubric
+      value: 'Pass only if the plan uses focused integration tests with realistic storage, middleware, and cookies for the changed authentication boundary; covers correct, wrong, unknown, unverified, and disabled-account outcomes with identical public failures where required; verifies client and HMAC-account limiter boundaries plus fail-closed outage behavior and real-or-dummy verification; covers successful password rehash, reset-token expiry/single-use/concurrent consumption and session invalidation, and idle/absolute/security-version session rejection; and uses a controllable clock and orchestration assertions instead of brittle equal-millisecond timing comparisons.'
+  metadata:
+    id: php-testing-style:authentication-integration-coverage
+    skill: php-testing-style
+    kind: apply

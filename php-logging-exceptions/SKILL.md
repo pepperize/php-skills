@@ -23,6 +23,20 @@ Before finalizing logging changes:
 - When adding a reusable log encoder, cover CR, LF, CRLF, tabs, quotes, and script-like payloads in focused unit tests.
 - Name extracted log-formatting methods with verb phrases such as `format...`, `encode...`, or `create...`.
 
+## Authentication And Authorization Events
+
+Record security-relevant outcomes at the boundary that knows the result. At minimum, cover:
+
+- login succeeded, failed, throttled, or temporarily locked;
+- authenticated session invalidated or rejected by expiry or security-version checks;
+- password reset completed;
+- authorization denied; and
+- role or privilege granted, revoked, or rejected.
+
+Use stable event names, the actor account ID when authenticated, the affected account ID when applicable, the permission or role identifier, outcome, reason code, and timestamp. For unauthenticated client or account correlation, use keyed pseudonymous identifiers with planned key rotation.
+
+Never log plaintext passwords, password hashes, reset or verification bearer tokens, session IDs, CSRF tokens, raw email addresses, raw usernames used for login, or raw IP addresses. Encode every remaining dynamic field for the log format. Rate-limit or aggregate repetitive login and denial events so an attacker cannot exhaust log storage or hide useful signals in noise.
+
 ## Exceptions
 
 Throw exceptions where the problem originates.

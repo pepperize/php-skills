@@ -1,0 +1,51 @@
+- description: php-authentication-security:session-lifecycle
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-authentication-security/SKILL.md
+    task: |
+      Review this authenticated-session design and prescribe the corrected login,
+      request-validation, privilege-change, and logout lifecycle. Include cookie
+      and response-header requirements.
+    code: |
+      public function login(Account $account): void
+      {
+          $_SESSION['account_id'] = $account->id();
+          $_SESSION['roles'] = $account->roles();
+          $_SESSION['expires_at'] = time() + 3600;
+      }
+
+      public function touch(): void
+      {
+          $_SESSION['expires_at'] = time() + 3600;
+      }
+
+      public function logout(): void
+      {
+          setcookie('sid', '', time() - 1);
+      }
+  assert:
+    - type: regex
+      value: 'rotate|regenerate|session_regenerate_id'
+    - type: contains
+      value: authenticated_at
+    - type: contains
+      value: last_activity_at
+    - type: regex
+      value: 'absolute.{0,100}(timeout|expiry)|(?:timeout|expiry).{0,100}absolute'
+    - type: contains
+      value: security_version
+    - type: regex
+      value: 'Secure.{0,120}HttpOnly|HttpOnly.{0,120}Secure'
+    - type: contains
+      value: SameSite
+    - type: contains
+      value: 'Cache-Control'
+    - type: contains
+      value: no-store
+    - type: llm-rubric
+      value: 'Pass only if the answer rotates the session ID after login and privilege changes, keeps immutable authentication time separate from last activity, enforces server-side idle and absolute expiry without extending the absolute lifetime, revalidates account/role freshness with reload or an account-owned security version on every request, increments that version after password and privilege security changes, fully invalidates server-side authenticated state and expires the cookie on logout, configures Secure/HttpOnly/SameSite/narrow Path cookies, and sends Cache-Control: no-store for authenticated or recovery-sensitive responses.'
+  metadata:
+    id: php-authentication-security:session-lifecycle
+    skill: php-authentication-security
+    kind: apply

@@ -1,0 +1,47 @@
+- description: php-rbac-authorization:protected-route-composition
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-rbac-authorization/SKILL.md
+    project_instructions: |
+      This is a session-backed Mezzio browser application. Middleware is listed
+      in execution order. Reset links are public bearer-capability routes.
+    task: |
+      Correct the security declarations and route composition for these handlers.
+      Explain the integration test that prevents a registered route from silently
+      becoming public when a callable or declaration cannot be resolved.
+    code: |
+      #[RequiresPermission(Permission::OwnerWrite)]
+      public function postOwner(): ResponseInterface { /* ... */ }
+
+      public function postLogout(): ResponseInterface { /* ... */ }
+
+      public function postPasswordReset(string $token): ResponseInterface { /* ... */ }
+
+      $app->post('/owner', [
+          AttributeAuthorizationMiddleware::class,
+          AuthenticationMiddleware::class,
+          OwnerController::class,
+      ]);
+      $app->post('/logout', LogoutController::class);
+      $app->post('/password/reset/{token}', [
+          AuthenticationMiddleware::class,
+          PasswordResetController::class,
+      ]);
+  assert:
+    - type: regex
+      value: 'SessionMiddleware::class[\s\S]{0,240}AuthenticationMiddleware::class[\s\S]{0,240}AttributeAuthorizationMiddleware::class[\s\S]{0,240}CsrfMiddleware::class'
+    - type: regex
+      value: '#\[RequiresAuthentication\][\s\S]{0,120}function\s+postLogout'
+    - type: regex
+      value: 'public allowlist|public-route allowlist|explicit public'
+    - type: regex
+      value: 'fail closed|deny|configuration error|throw'
+    - type: regex
+      value: 'route[- ]inventory|inventor(?:y|ies).{0,100}routes'
+    - type: llm-rubric
+      value: 'Pass only if the owner route executes session, authentication, attribute authorization, and CSRF middleware in that order; logout has a method-level RequiresAuthentication declaration and executes session, authentication, and CSRF middleware; the reset-token route remains outside the authenticated group and is explicitly allowlisted as public; and a route-inventory integration test resolves every handler, checks declarations and middleware, and makes unresolved callables or missing security declarations fail closed.'
+  metadata:
+    id: php-rbac-authorization:protected-route-composition
+    skill: php-rbac-authorization
+    kind: apply

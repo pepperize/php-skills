@@ -1,0 +1,31 @@
+- description: php-agent-instructions:authentication-authorization-routing
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-agent-instructions/SKILL.md
+    task: |
+      Produce the marked PHP Skill Self Review block for a project instruction
+      file. The block must tell agents which skills govern authentication and
+      authorization work, including the concrete change types that activate
+      each skill. Include the existing deployment routing rule as well.
+  assert:
+    - type: contains
+      value: php-authentication-security
+    - type: regex
+      value: 'login|credentials|password|sessions|logout|account recovery|verification|throttling|MFA'
+    - type: contains
+      value: php-rbac-authorization
+    - type: regex
+      value: 'roles|permissions|authorization attributes|protected routes|object-scoped access|RBAC mappings'
+    - type: contains
+      value: php-shared-hosting-deployment
+    - type: contains
+      value: '<!-- php-skills:self-review:start -->'
+    - type: contains
+      value: '<!-- php-skills:self-review:end -->'
+    - type: llm-rubric
+      value: 'Pass only if the marked self-review block routes login, credentials, password handling, sessions, logout, recovery or verification, throttling, and MFA changes to php-authentication-security; routes roles, permissions, authorization attributes, protected routes or controllers, object-scoped access, and RBAC mappings to php-rbac-authorization; and retains the shared-hosting deployment rule.'
+  metadata:
+    id: php-agent-instructions:authentication-authorization-routing
+    skill: php-agent-instructions
+    kind: apply
