@@ -1,0 +1,90 @@
+- description: php-templating:localized-email-body-templates
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-templating/SKILL.md
+    project_instructions: |
+      This Slim 4 application already uses slim/php-view with a configured HTML
+      page layout. Email subjects use Symfony Translation. Transactional emails
+      are plain text and support English and German without runtime fallback.
+      Several transactional email families use the same
+      `emails/{purpose}.{locale}.php` filename convention, and their factories
+      currently repeat locale-to-template mappings.
+    task: |
+      Refactor the approval email so a translation reviewer can inspect each
+      exact localized body in one file. Approval and rejection are distinct
+      outcomes. Preserve the translated subject and transport headers. Explain
+      the template selection, rendering call, template inputs, catalog cleanup,
+      and tests. Show representative factory and template code.
+    code: |
+      final class ApprovalEmailFactory
+      {
+          public function __construct(private TranslatorInterface $translator)
+          {
+          }
+
+          public function create(
+              Locale $locale,
+              ApprovalDecision $decision,
+          ): OutgoingEmail {
+              [$subject, $intro, $notice] = match ($decision) {
+                  ApprovalDecision::Approve => [
+                      'Your access was approved',
+                      'Your access was approved.',
+                      'You can now continue.',
+                  ],
+                  ApprovalDecision::Reject => [
+                      'Your access was rejected',
+                      'Your access was rejected.',
+                      'Contact support if this seems incorrect.',
+                  ],
+              };
+
+              return new OutgoingEmail(
+                  $this->translator->trans($subject, locale: $locale->value),
+                  implode("\n", [
+                      $this->translator->trans($intro, locale: $locale->value),
+                      '',
+                      $this->translator->trans($notice, locale: $locale->value),
+                  ]) . "\n",
+              );
+          }
+      }
+  assert:
+    - type: regex
+      value: 'fetch\s*\('
+    - type: contains
+      value: LocalizedEmailBodyRenderer
+    - type: contains
+      value: EmailBodyTemplate
+    - type: contains
+      value: TranslatorInterface
+    - type: contains
+      value: assertSame
+    - type: llm-rubric
+      value: >-
+        Pass only if the answer keeps short subjects and transport metadata
+        outside body templates, renders bodies with the established
+        slim/php-view renderer without the configured HTML layout, and replaces
+        translated paragraph assembly with four complete templates: one for
+        each approval/rejection and English/German combination. Locale and
+        outcome selection must be exhaustive with no fallback. Because several
+        email families share a filename convention, the answer must introduce
+        a concrete application-level `LocalizedEmailBodyRenderer` that derives
+        the locale-qualified path from closed `EmailBodyTemplate` and `Locale`
+        values, supplies the locale context, and delegates layout-free rendering
+        to the established renderer. The purpose-specific factory must map the
+        decision to the subject message and semantic template case rather than
+        repeat a locale match. Outcome prose must not branch inside a shared
+        template. Plain-text dynamic values must not be HTML-escaped. The answer
+        must remove only body translation entries that have no remaining callers
+        and propose real-renderer integration tests asserting complete bodies
+        for every locale/outcome, including coverage derived from `Locale::cases()`,
+        while keeping service tests focused on delivery behavior. Fail if it
+        accepts external strings as template names, adds a mirror renderer
+        interface without another implementation or architecture requirement,
+        or introduces a new template engine.
+  metadata:
+    id: php-templating:localized-email-body-templates
+    skill: php-templating
+    kind: apply

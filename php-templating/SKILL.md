@@ -1,6 +1,6 @@
 ---
 name: php-templating
-description: Applies company PHP templating conventions for typed page ViewModels, established engine selection, layouts, partials, output escaping, interface translation, and source-controlled localized page content. Use when defining data passed to server-rendered pages, choosing or changing a PHP template engine, writing or reviewing templates, implementing template escaping and translation helpers, or organizing localized static content.
+description: Applies company PHP templating conventions for typed presentation models, established engine selection, layouts, partials, output escaping, interface translation, and source-controlled localized page and email content. Use when defining template inputs, choosing or changing a PHP template engine, writing or reviewing page or email templates, implementing template escaping and translation helpers, or organizing localized static content.
 ---
 
 # PHP Templating
@@ -199,3 +199,27 @@ Choose the content source before selecting the localization approach:
 - Follow the selected engine's escaping rules for dynamic values. Source-controlled static markup may be authored directly in the partial.
 - Render every supported locale in integration tests. Verify representative localized content, required structure, and meaningful formatting.
 - Do not silently fall back to another language for authored content unless the product explicitly requires that behavior.
+
+## Localized Email Bodies
+
+When implementing or reviewing source-controlled localized email bodies, read
+[references/localized-email-bodies.md](references/localized-email-bodies.md) for native PHP examples.
+
+- Treat a multi-sentence, paragraph-based, or structurally formatted email body as long-form authored content. Render it through the project's established template engine instead of concatenating strings, assembling line arrays, or storing body paragraphs in the interface translation catalog.
+- Keep each complete translation in a locale-specific template. Create a separate complete template for every semantically distinct message outcome whose body differs, so a reviewer can read the exact outgoing message without following outcome-selection branches.
+- Do not extract translated prose into shared partials when doing so would force a reviewer to reconstruct the message. Reuse focused formatting helpers for dynamic values instead.
+- A complete template may conditionally render genuinely optional data, such as a notes section. It must not select between different message outcomes.
+- Name templates with the message purpose and outcome first and the locale as a suffix. Avoid locale-only filenames.
+- Make locale-specific template selection total and fallback-free. When several email families follow the same filename convention, represent locale-independent template names with an application-owned `EmailBodyTemplate` enum and derive the filename from that enum and the supported locale enum instead of repeating locale matches in each factory.
+- Centralize the shared filename convention and locale rendering context in a concrete `LocalizedEmailBodyRenderer`. Always pass the typed locale into the template data as rendering context, even when the current body uses it only to select the locale-qualified filename. Keep purpose-specific email factories responsible for outcome selection, subjects, recipients and transport metadata.
+- Let the shared renderer delegate to the established template engine's layout-free string-rendering operation. With slim/php-view, use `fetch()` without enabling the configured HTML page layout; do not mutate the shared renderer's layout for an email render. Do not add a mirror interface unless the project's architecture or multiple renderer implementations require one.
+- In an App/Domain/Infrastructure project without an explicit Clean Architecture rule, place the shared renderer with application presentation or email composition. Keep template-engine construction and configuration in Infrastructure, and keep template identifiers and renderers out of Domain.
+- Build template paths only from closed application-owned template identifiers and typed locales. Do not accept request strings or other external values as template names.
+- Keep recipients, subjects, sender, Reply-To, content type, and other transport metadata outside the body template.
+- Keep short subjects and short grammar-sensitive fragments in the established translation system. The _t() helper may be used for ICU pluralization or another short parameterized phrase, but not for body paragraphs, greetings, labels, or signatures that belong to the complete localized template.
+- Pass structured dynamic template data through a purpose-specific immutable ViewModel. A single obvious value, such as a generated confirmation URL, may be passed as a purpose-named scalar.
+- Keep email ViewModels free of requests, responses, repositories, domain entities, transport messages, renderers, HTML markup, and escaping behavior.
+- Apply output handling for the actual email format. Do not HTML-escape plain-text output; escape dynamic HTML email output for its output context.
+- Preserve intentional whitespace, optional-section spacing, line endings, and the final newline as observable message behavior.
+- Remove obsolete body-only translation entries after confirming that no callers remain.
+- Render every supported locale and message outcome with the real template engine in integration tests. Derive locale coverage from `Locale::cases()` so adding a locale exposes missing templates. With PHPUnit, compare each complete expected body to the actual body using `self::assertSame()`; keep service tests focused on sending, ordering, headers, and failure behavior.

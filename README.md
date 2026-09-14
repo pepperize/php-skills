@@ -5,7 +5,7 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 ## Skills
 
 - `php-readable-code`: readable PHP code, focused responsibilities, factory naming, nullable collection handling, and avoiding hard-to-read nested method calls.
-- `php-templating`: typed page ViewModels, template engine selection, layouts and partials, HTML escaping, and template translation with source-text keys, `_t()`, and ICU pluralization.
+- `php-templating`: typed presentation models, template engine selection, layouts and partials, HTML escaping, interface translation, and complete source-controlled localized page and email content.
 - `php-testing-style`: PHPUnit unit and integration testing conventions, London-style defaults, test layout, naming, and verification scope.
 - `php-solid-review`: SOLID, responsibility-boundary, code-smell, and pragmatic OO design review for PHP production code. Testing guidance stays delegated to `php-testing-style`.
 - `php-agent-instructions`: installs or updates project-level `AGENTS.md`/`CLAUDE.md` instructions for PHP skill self-review.

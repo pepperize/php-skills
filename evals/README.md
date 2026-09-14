@@ -10,7 +10,7 @@ The initial suite focuses on rules that are concrete enough to evaluate consiste
 
 - `php-testing-style`: PHPUnit data providers, assertions, test naming, and `$actual` result variables.
 - `php-readable-code`: avoiding production API that exists only for tests, naming costly data retrieval operations with `fetch...`, and keeping composed values visible to IDE debuggers.
-- `php-templating`: typed page ViewModels, Slim PHP-View selection and partials, explicit HTML escaping versus plain-text output, source-text translation keys, `_t()`, ICU pluralization, and per-render locale isolation.
+- `php-templating`: typed page ViewModels, Slim PHP-View selection and partials, explicit HTML escaping versus plain-text output, source-text translation keys, `_t()`, ICU pluralization, per-render locale isolation, and complete locale-specific email-body templates.
 - `php-domain-clarification`: asking questions before coding ambiguous domain scoping.
 - `php-clean-architecture`: respecting the activation guard.
 - `php-ddd-architecture`: domain repository ownership, retrieval naming, absence behavior, infrastructure implementation boundaries, controller-to-view-service boundaries, form-validation middleware, and Slim route-parser injection.

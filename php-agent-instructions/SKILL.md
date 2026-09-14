@@ -48,7 +48,7 @@ After making PHP code, test, or skill changes, review the diff before the final 
 - Use `php-domain-clarification` before coding when domain rules, identifiers, persistence shape, scoping, or externally visible behavior are unclear.
 - Use `php-solid-review` for design, responsibility, SOLID, code-smell, and refactoring concerns.
 - Use `php-readable-code` for naming, guard clauses, factories, utilities, and readability.
-- Use `php-templating` for server-rendered controllers, page templates, partials, and template-input changes.
+- Use `php-templating` for server-rendered controllers, page templates, partials, localized email bodies, and template-input changes.
 - Use `php-testing-style` for all test naming, mocks, unit/integration boundaries, assertions, layout, and verification scope.
 - Use `php-application-security` for input validation, regex safety, and other application-security-sensitive code paths.
 - Use `php-logging-exceptions` and `php-database-migrations` when changes touch those areas.
@@ -56,6 +56,7 @@ After making PHP code, test, or skill changes, review the diff before the final 
 - Before finalizing, review new or changed helper methods with `php-readable-code`.
 - Before finalizing, review thrown/caught exceptions and logging decisions with `php-logging-exceptions`.
 - Before finalizing a server-rendered page, verify that it receives one typed page ViewModel, structured nested values use ViewModels, and render arrays exist only as template-engine adapters.
+- Before finalizing a localized email body, verify that each distinct outcome and supported locale has one complete template, long-form prose is absent from translation catalogs and line assembly, rendering does not apply a page layout, and real-renderer tests cover each combination. When multiple email families share a locale-qualified filename convention, verify that template-path construction and locale context use a shared application renderer with closed template and locale types.
 - Do not add defensive branches unless the domain/API path can actually produce that state.
 - Fix issues found during self-review before finalizing.
 - Keep cleanup scoped to the requested change.
