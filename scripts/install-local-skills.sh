@@ -14,6 +14,7 @@ skills=(
   php-agent-instructions
   php-logging-exceptions
   php-application-security
+  php-rbac-authorization
   php-domain-clarification
   php-database-migrations
   php-shared-hosting-deployment

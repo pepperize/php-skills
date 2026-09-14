@@ -11,6 +11,7 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 - `php-agent-instructions`: installs or updates project-level `AGENTS.md`/`CLAUDE.md` instructions for PHP skill self-review.
 - `php-logging-exceptions`: logging and exception placement guidance for domain-relevant failures and technical boundaries.
 - `php-application-security`: application security guidance for external-input validation and regex safety.
+- `php-rbac-authorization`: RBAC authorization guidance for method-local permission attributes, centralized role-to-permission mappings, capability checks, and object-scoped access rules.
 - `php-domain-clarification`: clarification workflow before domain-sensitive implementation changes.
 - `php-shared-hosting-deployment`: GitHub Actions deployment guidance for PHP applications on SSH-accessible shared hosting, including exact artifact promotion, immutable releases, private persistent state, smoke gates, rollback, and fail-closed retention.
 - `php-clean-architecture`: Clean Architecture guidance for PHP projects. This skill is guarded and should only be used when the project's main instruction file explicitly states Clean Architecture.

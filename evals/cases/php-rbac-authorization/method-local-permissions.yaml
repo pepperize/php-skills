@@ -1,0 +1,38 @@
+- description: php-rbac-authorization:method-local-permissions
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-rbac-authorization/SKILL.md
+    task: |
+      Refactor this controller so each route handler shows its complete RBAC
+      requirement at the method declaration. The GET action requires only
+      OwnerAdministrationRead. The POST action requires only
+      OwnerAdministrationWrite. Preserve the controller and method names.
+    code: |
+      #[RequiresPermission(Permission::OwnerAdministrationRead)]
+      final class OwnerController
+      {
+          public function getOwner(): ResponseInterface
+          {
+              // ...
+          }
+
+          #[RequiresPermission(Permission::OwnerAdministrationWrite)]
+          public function postOwner(): ResponseInterface
+          {
+              // ...
+          }
+      }
+  assert:
+    - type: regex
+      value: '#\[RequiresPermission\(Permission::OwnerAdministrationRead\)\]\s*public function getOwner'
+    - type: regex
+      value: '#\[RequiresPermission\(Permission::OwnerAdministrationWrite\)\]\s*public function postOwner'
+    - type: not-regex
+      value: '#\[RequiresPermission\([^\]]+\)\]\s*final class OwnerController'
+    - type: llm-rubric
+      value: 'Pass only if the class-level permission attribute is removed, each permission attribute appears directly on its protected public method, the GET action requires only OwnerAdministrationRead, and the POST action requires only OwnerAdministrationWrite. Fail if the POST action also requires read permission, authorization attributes remain on the class, or the controller or method names change.'
+  metadata:
+    id: php-rbac-authorization:method-local-permissions
+    skill: php-rbac-authorization
+    kind: apply

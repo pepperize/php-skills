@@ -44,13 +44,14 @@ Pass `--file CLAUDE.md` or another path when the user requests a specific target
 After making PHP code, test, or skill changes, review the diff before the final response.
 
 - Treat relevant PHP skills as executable checklists, not background reading.
-- Before editing, name the applicable skills and the exact rules that constrain naming, exceptions, logging, validation, testing, migrations, and architecture.
+- Before editing, name the applicable skills and the exact rules that constrain naming, exceptions, logging, validation, authorization, testing, migrations, and architecture.
 - Use `php-domain-clarification` before coding when domain rules, identifiers, persistence shape, scoping, or externally visible behavior are unclear.
 - Use `php-solid-review` for design, responsibility, SOLID, code-smell, and refactoring concerns.
 - Use `php-readable-code` for naming, guard clauses, factories, utilities, and readability.
 - Use `php-templating` for server-rendered controllers, page templates, partials, localized email bodies, and template-input changes.
 - Use `php-testing-style` for all test naming, mocks, unit/integration boundaries, assertions, layout, and verification scope.
 - Use `php-application-security` for input validation, regex safety, and other application-security-sensitive code paths.
+- Use `php-rbac-authorization` when adding, changing, or reviewing roles, permissions, authorization attributes, protected controllers, or RBAC mappings.
 - Use `php-logging-exceptions` and `php-database-migrations` when changes touch those areas.
 - Use `php-shared-hosting-deployment` when creating or reviewing GitHub Actions and release scripts for SSH-accessible shared hosting.
 - Use `php-clean-architecture` and `php-ddd-architecture` only when this project's instructions explicitly state those architectures.
