@@ -6,7 +6,8 @@
     task: |
       Review this authenticated-session design and prescribe the corrected login,
       request-validation, privilege-change, and logout lifecycle. Include cookie
-      and response-header requirements.
+      and response-header requirements. State when the account-owned security
+      version must be incremented.
     code: |
       public function login(Account $account): void
       {

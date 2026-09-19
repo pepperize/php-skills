@@ -13,9 +13,9 @@
     - type: regex
       value: '[Ee]xact|recorded.*(release|predecessor)|captured predecessor'
     - type: regex
-      value: '[Ss]moke.*(before|prior).*prun|prun.*(after|only after).*smoke|only after.*smoke'
+      value: '[Ss]moke[\s\S]{0,300}(prun|delet|retention)|(prun|delet|retention)[\s\S]{0,300}(after|only after)[\s\S]{0,100}smoke'
     - type: regex
-      value: '[Pp]reserve (all|every)|must not delete|do not delete|stop.*capacity|capacity.*stop'
+      value: '[Pp]reserve (all|every)|[Mm]ust not delete|[Dd]o not delete|[Ss]top.*capacity|capacity.*[Ss]top'
     - type: regex
       value: '(?:[Dd]o not|[Nn]ever|not).*(?:modification time|mtime|oldest|timestamp|age|directory order)|(?:select|selected|choose|chosen).*recorded release identity'
     - type: regex

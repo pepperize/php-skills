@@ -10,7 +10,10 @@
     task: |
       Refactor this protected booking change so framework authentication and
       RBAC types remain at the web or infrastructure boundary. Preserve a coarse
-      booking-write capability and a separate tenant/ownership decision.
+      booking-write capability and a separate tenant/ownership decision. Show
+      the application-owned `CurrentUser`, `AuthorizationService`, `Permission`,
+      and `RequiresPermission` types and the web-boundary mapping required by
+      the skill's Authentication And Authorization Boundaries section.
     code: |
       final class ChangeBooking
       {
@@ -45,7 +48,7 @@
     - type: regex
       value: 'ownership|tenant'
     - type: regex
-      value: 'web boundary|web adapter|controller'
+      value: '[Ww]eb[- ]boundary|[Ww]eb adapter|[Cc]ontroller'
     - type: llm-rubric
       value: 'Pass only if Mezzio UserInterface, PSR-7 requests, session types, and Laminas Rbac remain outside application/domain services; the web boundary maps identity to an application-owned CurrentUser; the controller method declares a typed BookingWrite capability; application code depends only on application-owned AuthorizationService, Permission, and CurrentUser contracts; and ownership or tenant scope is enforced separately in an application policy or domain service without embedding booking IDs in permission strings.'
   metadata:

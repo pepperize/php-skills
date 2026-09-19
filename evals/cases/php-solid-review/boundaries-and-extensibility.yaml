@@ -1,0 +1,142 @@
+- description: php-solid-review:isp-broad-interface
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      interface DocumentStore
+      {
+          public function find(DocumentId $id): Document;
+          public function save(Document $document): void;
+          public function exportPdf(DocumentId $id): string;
+      }
+
+      final class ReadOnlyArchive implements DocumentStore
+      {
+          public function save(Document $document): void
+          {
+              throw new LogicException('Read only');
+          }
+      }
+  assert:
+    - type: regex
+      value: '\bISP\b|Interface Segregation Principle'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names ISP or Interface Segregation Principle, explains that ReadOnlyArchive is forced to reject part of the broad contract, and recommends focused interfaces based on client capabilities.'
+  metadata:
+    id: php-solid-review:isp-broad-interface
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:dip-vendor-construction-in-policy
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class Checkout
+      {
+          public function pay(Order $order): PaymentId
+          {
+              $gateway = new VendorPaymentClient($_ENV['PAYMENT_KEY']);
+
+              return $gateway->charge($order->totalInCents());
+          }
+      }
+  assert:
+    - type: regex
+      value: '\bDIP\b|Dependency Inversion Principle'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names DIP or Dependency Inversion Principle, explains that high-level checkout policy constructs and depends on a volatile vendor client, and recommends injecting a purpose-owned payment capability while keeping vendor wiring at the composition boundary.'
+  metadata:
+    id: php-solid-review:dip-vendor-construction-in-policy
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:ocp-repeated-format-branching
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class ReportService
+      {
+          public function export(Report $report, string $format): ExportedReport
+          {
+              return match ($format) {
+                  'csv' => new ExportedReport($this->toCsv($report), 'text/csv'),
+                  'json' => new ExportedReport($this->toJson($report), 'application/json'),
+                  'xml' => new ExportedReport($this->toXml($report), 'application/xml'),
+              };
+          }
+      }
+
+      // New report formats with independently owned encoders are commissioned
+      // every quarter, so this stable dispatcher changes for every addition.
+  assert:
+    - type: regex
+      value: '\bOCP\b|Open Closed Principle'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names OCP or Open Closed Principle, uses the stated recurring independently owned format variation as evidence, and recommends a focused exporter or encoder boundary that returns the supplied ExportedReport value or otherwise keeps each format''s output behavior cohesive.'
+  metadata:
+    id: php-solid-review:ocp-repeated-format-branching
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:dip-concrete-dependency-tradeoff
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class TaxRateTable
+      {
+          public function rateFor(CountryCode $country): int
+          {
+              return $country->equals(CountryCode::DE) ? 19 : 0;
+          }
+      }
+
+      final class VatCalculator
+      {
+          public function __construct(private TaxRateTable $rates) {}
+
+          public function calculate(Money $net, CountryCode $country): Money
+          {
+              return $net->percentage($this->rates->rateFor($country));
+          }
+      }
+
+      // TaxRateTable is a stable, local, pure collaborator; no alternate source is required.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the review does not claim a DIP violation and does not recommend an interface for the stable local concrete TaxRateTable. It should recognize that dependency injection already makes the simple design testable or state that there is no material finding.'
+  metadata:
+    id: php-solid-review:dip-concrete-dependency-tradeoff
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:ocp-simple-conditional-tradeoff
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class ShippingCost
+      {
+          public function forDestination(CountryCode $country): Money
+          {
+              return $country->equals(CountryCode::DE)
+                  ? Money::euros(5)
+                  : Money::euros(15);
+          }
+      }
+
+      // This stable two-rate rule is the complete accepted requirement.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the review leaves the stable, complete two-rate conditional simple and does not propose strategies, factories, registries, polymorphism, or an OCP finding. It may state that KISS/YAGNI favor the current code without presenting them as violations.'
+  metadata:
+    id: php-solid-review:ocp-simple-conditional-tradeoff
+    skill: php-solid-review
+    kind: review

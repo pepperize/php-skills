@@ -1,0 +1,30 @@
+- description: php-solid-review:dry-duplicated-business-rule
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class CheckoutDiscount
+      {
+          public function percentage(int $points): int
+          {
+              return $points >= 1_000 ? 10 : 0;
+          }
+      }
+
+      final class QuoteDiscount
+      {
+          public function percentage(int $points): int
+          {
+              return $points >= 1_000 ? 10 : 0;
+          }
+      }
+  assert:
+    - type: regex
+      value: '\bDRY\b|Don.t Repeat Yourself'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names DRY or Don’t Repeat Yourself, explains that the shared discount business rule has two authorities that can diverge, and recommends one purpose-named policy or equivalent source of truth. The response must not print an unrelated principle checklist.'
+  metadata:
+    id: php-solid-review:dry-duplicated-business-rule
+    skill: php-solid-review
+    kind: review

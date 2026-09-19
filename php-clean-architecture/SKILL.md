@@ -14,6 +14,8 @@ Use this skill only when that file explicitly states the project uses Clean Arch
 If the project does not explicitly state Clean Architecture, do not apply this skill.
 Say that the Clean Architecture skill is not activated for this project, explain that the main project instructions do not explicitly state Clean Architecture, and do not introduce or show `UseCase`, `Port`, or `Adapter` classes or interfaces even as examples.
 
+When this skill is active for an architecture or design review, also apply `php-solid-review` for cross-cutting engineering principles. Name only principles that explain material findings; its general heuristics must not override this skill's project-specific architectural boundaries.
+
 ## Boundaries
 
 Preserve clear boundaries between use cases, domain/application logic, ports, and adapters.

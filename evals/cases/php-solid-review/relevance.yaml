@@ -1,0 +1,31 @@
+- description: php-solid-review:well-designed-code-no-checklist
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class Money
+      {
+          public function __construct(private int $cents) {}
+
+          public function add(Money $other): Money
+          {
+              return new Money($this->cents + $other->cents);
+          }
+
+          public function cents(): int
+          {
+              return $this->cents;
+          }
+      }
+  assert:
+    - type: regex
+      value: '[Nn]o (relevant|meaningful|material).*(violation|finding|issue)|[Nn]o violations|[Nn]o findings'
+    - type: not-regex
+      value: '\b(DRY|KISS|FCoI|IOSP|SRP|SoC|ISP|DIP|LSP|OCP|YAGNI|LoD)\b'
+    - type: llm-rubric
+      value: 'Pass only if the review reports no material violation, does not invent abstractions or changes for this small cohesive value object, and does not output a checklist of principle names.'
+  metadata:
+    id: php-solid-review:well-designed-code-no-checklist
+    skill: php-solid-review
+    kind: review

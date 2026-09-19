@@ -1,0 +1,103 @@
+- description: php-solid-review:kiss-unnecessary-machinery
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      interface GreetingStrategy
+      {
+          public function format(string $name): string;
+      }
+
+      final class GreetingStrategyRegistry
+      {
+          /** @param array<string, GreetingStrategy> $strategies */
+          public function __construct(private array $strategies) {}
+
+          public function resolve(string $key): GreetingStrategy
+          {
+              return $this->strategies[$key];
+          }
+      }
+
+      final class EnglishGreeting implements GreetingStrategy
+      {
+          public function format(string $name): string
+          {
+              return 'Hello ' . $name;
+          }
+      }
+
+      // The product has one fixed English greeting and no localization requirement.
+  assert:
+    - type: regex
+      value: '\bKISS\b|Keep it simple, stupid'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names KISS, identifies the strategy and registry as needless complexity for one fixed greeting, and recommends a direct small implementation. Other principles may be mentioned only if they add useful context; no checklist.'
+  metadata:
+    id: php-solid-review:kiss-unnecessary-machinery
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:yagni-speculative-export-configuration
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class CsvExporter
+      {
+          /** @param list<string> $futureFormats */
+          public function __construct(
+              private array $futureFormats = [],
+              private ?string $pluginDirectory = null,
+              private int $protocolVersion = 1,
+          ) {}
+
+          public function export(Report $report): string
+          {
+              return implode("\n", $report->csvRows());
+          }
+      }
+
+      // CSV is the only approved format; none of the constructor options are used.
+  assert:
+    - type: regex
+      value: '\bYAGNI\b|You Ain.t Gonna Need It'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names YAGNI, ties the finding to the unused speculative format/plugin/version options, and recommends removing that unused flexibility until a real requirement exists.'
+  metadata:
+    id: php-solid-review:yagni-speculative-export-configuration
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:dry-premature-abstraction-tradeoff
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class WelcomeEmail
+      {
+          public function subject(string $firstName): string
+          {
+              return 'Welcome, ' . $firstName;
+          }
+      }
+
+      final class PasswordResetEmail
+      {
+          public function subject(string $firstName): string
+          {
+              return 'Reset your password, ' . $firstName;
+          }
+      }
+
+      // Product owners confirm these messages have separate owners and evolve independently.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the review does not claim a DRY violation and does not recommend a shared abstraction for the two independently evolving email subjects. It should say there is no material design finding or explain that superficial similarity is insufficient.'
+  metadata:
+    id: php-solid-review:dry-premature-abstraction-tradeoff
+    skill: php-solid-review
+    kind: review

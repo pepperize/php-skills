@@ -1,0 +1,127 @@
+- description: php-solid-review:fcoi-inheritance-for-reuse
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class SalesReportExporter extends PdfDocument
+      {
+          public function export(SalesReport $report): string
+          {
+              $this->addPage();
+              $this->write($report->summary());
+
+              return $this->bytes();
+          }
+      }
+
+      // PdfDocument exposes page size, authoring, encryption, and mutation methods.
+  assert:
+    - type: regex
+      value: '\bFCoI\b|Favour Composition over Inheritance'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names FCoI or Favour Composition over Inheritance, explains that the exporter is not substitutable as a PDF document and inherits irrelevant API for reuse, and suggests composing with a focused PDF renderer.'
+  metadata:
+    id: php-solid-review:fcoi-inheritance-for-reuse
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:lsp-unsupported-subtype-operation
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      class BankAccount
+      {
+          public function withdraw(Money $amount): void
+          {
+              // withdraw funds
+          }
+      }
+
+      final class FixedTermAccount extends BankAccount
+      {
+          public function withdraw(Money $amount): void
+          {
+              throw new LogicException('Withdrawals are not supported');
+          }
+      }
+  assert:
+    - type: regex
+      value: '\bLSP\b|Liskov Substitution Principle'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names LSP or Liskov Substitution Principle, explains that FixedTermAccount cannot honor the ordinary BankAccount withdraw contract, and recommends a hierarchy or capability boundary that does not promise unsupported withdrawal.'
+  metadata:
+    id: php-solid-review:lsp-unsupported-subtype-operation
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:legitimate-inheritance-tradeoff
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      abstract class Notification
+      {
+          final public function __construct(
+              private Recipient $recipient,
+              private DateTimeImmutable $createdAt,
+          ) {}
+
+          final public function recipient(): Recipient
+          {
+              return $this->recipient;
+          }
+
+          final public function createdAt(): DateTimeImmutable
+          {
+              return $this->createdAt;
+          }
+
+          abstract public function subject(): string;
+          abstract public function message(): string;
+      }
+
+      final class PasswordResetNotification extends Notification
+      {
+          public function subject(): string
+          {
+              return 'Reset your password';
+          }
+
+          public function message(): string
+          {
+              return 'Use the secure reset link.';
+          }
+      }
+
+      final class InvoiceOverdueNotification extends Notification
+      {
+          public function subject(): string
+          {
+              return 'Invoice overdue';
+          }
+
+          public function message(): string
+          {
+              return 'Please pay the outstanding invoice.';
+          }
+      }
+
+      function send(Notification $notification, Mailer $mailer): void
+      {
+          $mailer->send(
+              $notification->recipient(),
+              $notification->subject(),
+              $notification->message(),
+          );
+      }
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the review accepts this as a genuine substitutable hierarchy and does not recommend replacing inheritance with composition or claim an FCoI/LSP violation. It may state that there is no meaningful design finding.'
+  metadata:
+    id: php-solid-review:legitimate-inheritance-tradeoff
+    skill: php-solid-review
+    kind: review

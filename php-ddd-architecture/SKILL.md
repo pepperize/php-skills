@@ -9,6 +9,8 @@ description: Use for PHP projects whose AGENTS.md, CLAUDE.md, or equivalent expl
 
 Before applying this skill, check the project's main instruction file such as `AGENTS.md`, `CLAUDE.md`, or equivalent. Use it only when that file explicitly states the project uses DDD or Domain-Driven Design.
 
+When this skill is active for an architecture or design review, also apply `php-solid-review` for cross-cutting engineering principles. Name only principles that explain material findings; its general heuristics must not override this skill's project-specific DDD rules.
+
 ## Project Guidance
 
 Follow the DDD rules in the project's own instruction files and domain docs.

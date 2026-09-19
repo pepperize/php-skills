@@ -10,12 +10,19 @@
       Propose focused tests for a change that adds login throttling, password
       hash upgrades, reset-token consumption, and idle/absolute session expiry.
       Choose unit or integration boundaries, cover account-enumeration behavior,
-      and explain how timing behavior should be asserted.
+      and explain how timing behavior should be asserted. Cover every behavior
+      from the skill's Authentication Integration Coverage section affected by
+      these changes. Make coverage explicit for correct and wrong passwords,
+      unknown, unverified, and disabled accounts with identical public failures
+      where required, client and HMAC-account limiter boundaries including a
+      fail-closed limiter outage, real-or-dummy password verification, password
+      rehash, reset-token expiry/single-use/concurrency, session invalidation,
+      and security-version rejection.
   assert:
     - type: regex
       value: 'tests/Integration|integration tests?'
     - type: regex
-      value: 'correct password|wrong password'
+      value: '[Cc]orrect[Pp]assword|[Cc]orrect password|[Ww]rong[Pp]assword|[Ww]rong password'
     - type: regex
       value: 'unknown account|unverified account|disabled account'
     - type: regex
@@ -23,13 +30,15 @@
     - type: regex
       value: 'dummy hash|dummy-hash'
     - type: regex
-      value: 'password_needs_rehash|password[- ]hash upgrade|hash upgrade|rehash'
+      value: 'password_needs_rehash|[Pp]assword[Hh]ash.{0,40}[Uu]pgrad|password[- ]hash.{0,40}upgrad|hash upgrade|rehash'
     - type: regex
-      value: 'single[- ]use|second use|concurrent'
+      value: '[Ss]ingle[- ]use|[Ss]econd[Uu]se|second use|[Cc]oncurrent'
+    - type: icontains
+      value: idle
+    - type: icontains
+      value: absolute
     - type: regex
-      value: 'idle.{0,100}absolute|absolute.{0,100}idle'
-    - type: regex
-      value: 'controllable clock|test clock|fake clock'
+      value: 'controllable.{0,20}Clock|test.{0,20}Clock|fake.{0,20}Clock'
     - type: llm-rubric
       value: 'Pass only if the plan uses focused integration tests with realistic storage, middleware, and cookies for the changed authentication boundary; covers correct, wrong, unknown, unverified, and disabled-account outcomes with identical public failures where required; verifies client and HMAC-account limiter boundaries plus fail-closed outage behavior and real-or-dummy verification; covers successful password rehash, reset-token expiry/single-use/concurrent consumption and session invalidation, and idle/absolute/security-version session rejection; and uses a controllable clock and orchestration assertions instead of brittle equal-millisecond timing comparisons.'
   metadata:

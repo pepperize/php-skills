@@ -33,7 +33,7 @@
     - type: contains
       value: CurrentUser
     - type: regex
-      value: 'map|translate|factory|createFromRequest'
+      value: '[Mm]ap|translate|factory|createFromRequest'
     - type: llm-rubric
       value: 'Pass only if the answer uses the maintained Mezzio authentication packages for this compatible session-backed application, orders session before authentication and authentication before authorization, keeps Mezzio and session types at infrastructure or web boundaries, maps the framework identity to an application-owned CurrentUser, and keeps the application use case free of Mezzio UserInterface, requests, and session objects.'
   metadata:

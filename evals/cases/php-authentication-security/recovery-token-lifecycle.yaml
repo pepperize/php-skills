@@ -22,13 +22,13 @@
     - type: regex
       value: 'random_bytes\s*\(\s*32\s*\)'
     - type: regex
-      value: '(digest|hash).{0,80}(store|persist)|(?:store|persist).{0,80}(digest|hash)'
+      value: '(?:[Dd]igest|[Hh]ash).{0,80}(?:[Ss]tore|[Pp]ersist)|(?:[Ss]tore|[Pp]ersist).{0,80}(?:[Dd]igest|[Hh]ash)'
     - type: regex
       value: 'expir|purpose'
     - type: regex
       value: 'atomic|transaction|single[- ]use|only one.*succeed'
     - type: regex
-      value: 'same public|generic.{0,80}(status|message|response)|enumerat'
+      value: '[Ss]ame public|[Ii]dentical.{0,80}(public|response)|[Gg]eneric.{0,80}(status|message|response)|enumerat'
     - type: contains
       value: 'Referrer-Policy'
     - type: regex

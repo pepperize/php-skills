@@ -7,7 +7,9 @@
       Redesign this login flow so it resists account enumeration and automated
       guessing. Cover limiter keys, known and unknown accounts, unavailable
       limiter state, public responses, password verification, and recovery
-      after a successful login.
+      after a successful login. Apply every directly relevant rule in the
+      skill's Login Enumeration And Throttling section, including whether the
+      backoff or lockout is temporary and bounded.
     code: |
       public function login(string $email, string $password): ResponseInterface
       {
@@ -36,8 +38,8 @@
       value: 'known and unknown|known.*unknown|unknown.*known'
     - type: regex
       value: 'dummy hash|dummy-hash|precomputed dummy'
-    - type: contains
-      value: '429'
+    - type: regex
+      value: '429|tooManyRequests|Too Many Requests'
     - type: contains
       value: '503'
     - type: regex

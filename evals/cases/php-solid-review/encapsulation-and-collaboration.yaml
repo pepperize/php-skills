@@ -1,0 +1,112 @@
+- description: php-solid-review:information-hiding-public-state
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class Order
+      {
+          public string $status = 'draft';
+
+          public function markPaid(Payment $payment): void
+          {
+              if (!$payment->covers($this->total())) {
+                  throw new DomainException('Payment does not cover order');
+              }
+
+              $this->status = 'paid';
+          }
+      }
+
+      // This bypasses the established payment invariant.
+      $order->status = 'paid';
+  assert:
+    - type: icontains
+      value: Information Hiding Principle
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names Information Hiding Principle, explains that public mutable status exposes representation and bypasses transition invariants, and recommends private state behind a purpose-named transition operation.'
+  metadata:
+    id: php-solid-review:information-hiding-public-state
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:tell-dont-ask-external-transition
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class SubmitOrder
+      {
+          public function execute(Order $order): void
+          {
+              if ($order->canSubmit()) {
+                  $order->submit();
+              }
+          }
+      }
+
+      // Order::submit() currently assumes the caller checked canSubmit().
+      // Submission eligibility is an Order invariant for every call.
+  assert:
+    - type: regex
+      value: "Tell, Don.t Ask"
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names Tell, Don’t Ask, explains that the caller queries canSubmit() before issuing submit(), and recommends making Order::submit() protect its own eligibility invariant so callers can tell the order to submit directly.'
+  metadata:
+    id: php-solid-review:tell-dont-ask-external-transition
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:lod-object-graph-chain
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class ShippingLabelService
+      {
+          public function countryCode(Order $order): string
+          {
+              return $order->customer()->address()->country()->code();
+          }
+      }
+  assert:
+    - type: regex
+      value: '\bLoD\b|Law of Demeter'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names LoD or Law of Demeter, explains that the service is coupled to the order/customer/address/country graph, and recommends asking the direct collaborator for a shipping-country concept or equivalent purpose-revealing behavior.'
+  metadata:
+    id: php-solid-review:lod-object-graph-chain
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:least-astonishment-hidden-side-effect
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class CustomerRepository
+      {
+          /** @return list<Customer>|null */
+          public function findAll(): ?array
+          {
+              $this->archiveInactiveCustomers();
+
+              return $this->rows ?: null;
+          }
+      }
+
+      foreach ($customers->findAll() as $customer) {
+          render($customer);
+      }
+  assert:
+    - type: icontains
+      value: Principle of Least Astonishment
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names Principle of Least Astonishment, identifies both the hidden archive side effect and surprising nullable collection on findAll(), and recommends an explicit command plus a predictable list-returning query.'
+  metadata:
+    id: php-solid-review:least-astonishment-hidden-side-effect
+    skill: php-solid-review
+    kind: review

@@ -1,0 +1,30 @@
+- description: php-solid-review:implementation-does-not-reflect-design
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      // Architecture decision: refund eligibility is owned by RefundPolicy.
+      final class RefundController
+      {
+          public function refund(Order $order): void
+          {
+              if (
+                  $order->status()->value === 'paid'
+                  && $order->paidAt() > new DateTimeImmutable('-30 days')
+              ) {
+                  $this->payments->refund($order->paymentId());
+              }
+          }
+      }
+  assert:
+    - type: icontains
+      value: Implementation Reflects Design
+    - type: contains
+      value: RefundPolicy
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names Implementation Reflects Design, explains that the documented RefundPolicy is absent while its eligibility rule is hidden in the controller, and recommends moving the real rule behind the named policy without inventing unrelated architecture.'
+  metadata:
+    id: php-solid-review:implementation-does-not-reflect-design
+    skill: php-solid-review
+    kind: review

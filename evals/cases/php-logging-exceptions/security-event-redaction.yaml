@@ -6,7 +6,9 @@
     task: |
       Review this authentication and authorization logging. Replace sensitive
       fields and define useful event records for login failure, authorization
-      denial, and a role grant. Include abuse controls for repetitive events.
+      denial, and a role grant. Include every applicable rule in the skill's
+      Authentication And Authorization Events section, including every listed
+      forbidden value such as password hashes, bearer tokens, and CSRF tokens.
     code: |
       $logger->warning('Login failed', [
           'email' => $request->getParsedBody()['email'],

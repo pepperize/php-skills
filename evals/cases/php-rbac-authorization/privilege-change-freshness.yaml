@@ -21,7 +21,7 @@
       }
   assert:
     - type: regex
-      value: 'next request|every request'
+      value: 'next (authenticated )?request|every (authenticated )?request'
     - type: regex
       value: 'reload.{0,100}roles|security[_ -]version|session[_ -]version'
     - type: regex

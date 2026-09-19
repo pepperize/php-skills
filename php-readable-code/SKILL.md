@@ -120,6 +120,7 @@ Do not add production code only to make tests easier. Avoid test-only constructo
 
 Before finalizing PHP code changes:
 
+- For a non-trivial implementation or refactor, also use `php-solid-review` to review the resulting diff against only the engineering principles that materially apply. Fix meaningful findings before finalizing; do not enumerate principles that have no finding.
 - Review every newly added or renamed method.
 - Classify each as accessor/property, boolean predicate, action/operation, or factory/construction helper.
 - Accessors may use noun names. Predicates should use `is`, `has`, `can`, `should`, or similar.

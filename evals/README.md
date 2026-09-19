@@ -8,9 +8,10 @@ The cases load each skill from the repository's existing `SKILL.md` files throug
 
 The initial suite focuses on rules that are concrete enough to evaluate consistently:
 
-- `php-agent-instructions`: authentication, authorization, and deployment skill routing in the installed self-review block.
+- `php-agent-instructions`: authentication, authorization, deployment, and design-review/self-review routing in the installed instruction block.
 - `php-testing-style`: PHPUnit data providers, assertions, test naming, `$actual` result variables, authentication integration coverage, and authorization route inventories.
 - `php-readable-code`: avoiding production API that exists only for tests, naming costly data retrieval operations with `fetch...`, and keeping composed values visible to IDE debuggers.
+- `php-solid-review`: behavior-based coverage of all 17 engineering principles, explicit principle naming, implementation self-review, manual review, relevance, positive cases, and trade-offs that should not trigger premature abstractions.
 - `php-templating`: typed page ViewModels, Slim PHP-View selection and partials, explicit HTML escaping versus plain-text output, source-text translation keys, `_t()`, ICU pluralization, per-render locale isolation, and complete locale-specific email-body templates.
 - `php-domain-clarification`: asking questions before coding ambiguous domain scoping.
 - `php-clean-architecture`: respecting the activation guard.

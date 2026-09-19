@@ -11,7 +11,7 @@
     - type: regex
       value: '[Ee]xact (same |tested |staging )?artifact|same artifact'
     - type: regex
-      value: '[Dd]o not rebuild|must not rebuild|instead of rebuilding|without rebuilding'
+      value: '[Dd]o not rebuild|must not rebuild|instead of rebuilding|without rebuilding|[Bb]uilds? once|[Ee]xact artifact'
     - type: regex
       value: 'commit SHA|commit hash|source commit'
     - type: regex

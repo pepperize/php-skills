@@ -10,7 +10,9 @@
       Design the integration coverage for a route-registration change that adds
       permission attributes, authenticated-only logout, an authenticated POST
       action, and a public password-reset token endpoint. State what the route
-      inventory and behavioral authorization tests must prove.
+      inventory and behavioral authorization tests must prove. Cover every
+      directly applicable rule in the skill's Authorization Route Inventory
+      section, including exact role mappings and `CurrentUser`-derived scope.
   assert:
     - type: regex
       value: 'route[- ]inventory|inventory.{0,80}routes'
@@ -25,7 +27,7 @@
     - type: regex
       value: 'unresolved callable|missing declaration'
     - type: regex
-      value: 'fail closed|deny|configuration error'
+      value: '[Ff]ail[Cc]losed|[Ff]ail closed|deny|configuration error'
     - type: regex
       value: 'AND'
     - type: contains

@@ -9,11 +9,14 @@
     task: |
       Refactor this server-rendered controller so it no longer accesses repositories directly.
       The rendered data must not expose domain objects. Show the resulting controller,
-      frontend ViewService, typed content and page ViewModels, shared header and
+      frontend ViewService, typed `PrivacyPolicyContentViewModel` and
+      `PrivacyPolicyPageViewModel`, shared header and
       legal-navigation collaborators, and final render call. Repository access
       is potentially costly. The ViewService must return the complete page
       ViewModel; the controller should only adapt HTTP input, call the service,
-      render its result, and complete the HTTP response.
+      render its result, and complete the HTTP response. Preserve the established
+      renderer's named-variable adapter by passing the sole page model as
+      `['page' => $page]`.
     code: |
       final class PrivacyPolicyController
       {

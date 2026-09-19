@@ -1,0 +1,30 @@
+- description: php-agent-instructions:design-self-review-routing
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-agent-instructions/SKILL.md
+    task: |
+      Produce the marked PHP Skill Self Review block for a project instruction
+      file. Ensure non-trivial implementations are self-reviewed and explicit
+      code, architecture, and design reviews use the collection's engineering
+      principles with relevant principle names and without a mechanical
+      checklist.
+  assert:
+    - type: contains
+      value: php-solid-review
+    - type: icontains
+      value: non-trivial implementations
+    - type: icontains
+      value: explicit code, architecture, and design reviews
+    - type: icontains
+      value: name the applicable principle
+    - type: icontains
+      value: do not emit a principle checklist
+    - type: icontains
+      value: no relevant principle violation
+    - type: llm-rubric
+      value: 'Pass only if the marked self-review block routes both non-trivial implementation self-review and explicit code/architecture/design review through php-solid-review, requires names on meaningful findings, rejects mechanical enumeration and manufactured findings, and allows a no-violation result.'
+  metadata:
+    id: php-agent-instructions:design-self-review-routing
+    skill: php-agent-instructions
+    kind: apply

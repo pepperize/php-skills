@@ -1,0 +1,72 @@
+- description: php-solid-review:self-review-catches-own-design-issue
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    task: |
+      Treat the supplied class as the implementation you just produced for an
+      invoice-issuance change. Before finalizing, perform the skill's required
+      implementation self-review. Report only meaningful findings, then show
+      the smallest corrected design.
+    code: |
+      final class InvoiceIssuer
+      {
+          public function __construct(
+              private PDO $pdo,
+              private PdfRenderer $pdf,
+              private Mailer $mailer,
+          ) {}
+
+          public function issue(Invoice $invoice): void
+          {
+              $this->pdo->prepare('INSERT INTO invoices (...)')->execute($invoice->toRow());
+              $attachment = $this->pdf->render($invoice);
+              $this->mailer->send($invoice->customerEmail(), $attachment);
+          }
+      }
+  assert:
+    - type: regex
+      value: '\b(SRP|DIP)\b|Single Responsibility Principle|Dependency Inversion Principle|\bSoC\b|Separation of Concerns|Single Level of Abstraction'
+    - type: llm-rubric
+      value: 'Pass only if the response behaves as a pre-final self-review: it explicitly names a materially applicable principle such as SoC, DIP, SRP, or Single Level of Abstraction; catches the concrete mixing of invoice orchestration with PDO/SQL persistence detail; and presents the smallest corrected design with a focused persistence collaborator or another proportionate boundary. It must not dump an all-principles checklist or force an interface without a demonstrated need.'
+  metadata:
+    id: php-solid-review:self-review-catches-own-design-issue
+    skill: php-solid-review
+    kind: apply
+
+- description: php-solid-review:self-review-may-pass
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    task: |
+      Treat the supplied class as a non-trivial implementation you just
+      completed. Perform the required design self-review and report only
+      meaningful findings. Do not change code that has no material problem.
+      If there is no finding, state that conclusion without naming principles
+      that passed or did not apply.
+    code: |
+      final class SubmitOrder
+      {
+          public function __construct(
+              private OrderRepository $orders,
+              private EventPublisher $events,
+          ) {}
+
+          public function execute(OrderId $id): void
+          {
+              $order = $this->orders->find($id);
+              $order->submit();
+              $this->orders->save($order);
+              $this->events->publish(new OrderSubmitted($order->id()));
+          }
+      }
+  assert:
+    - type: regex
+      value: '[Nn]o (relevant|meaningful|material).*(violation|finding|issue)|[Nn]o .*principle violation'
+    - type: llm-rubric
+      value: 'Pass only if the self-review concludes there is no meaningful principle violation, does not invent a finding, does not enumerate principles, and leaves the cohesive orchestration unchanged.'
+  metadata:
+    id: php-solid-review:self-review-may-pass
+    skill: php-solid-review
+    kind: apply

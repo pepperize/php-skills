@@ -1,0 +1,153 @@
+- description: php-solid-review:srp-mixed-responsibilities
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class InvoiceService
+      {
+          public function issue(Invoice $invoice): void
+          {
+              if ($invoice->lines() === []) {
+                  throw new InvalidArgumentException('Invoice needs lines');
+              }
+
+              $this->pdo->insert('invoices', $invoice->toRow());
+              $pdf = $this->pdf->render($invoice);
+              $this->mailer->send($invoice->customerEmail(), $pdf);
+          }
+      }
+
+      // Validation policy, database schema, PDF layout, and delivery channel
+      // have separate owners and change independently.
+  assert:
+    - type: regex
+      value: '\bSRP\b|Single Responsibility Principle'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names SRP, identifies at least two independently changing responsibilities in InvoiceService, describes the coupling consequence, and suggests focused collaborators or a cohesive issuance orchestrator without excessive fragmentation.'
+  metadata:
+    id: php-solid-review:srp-mixed-responsibilities
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:soc-controller-mixes-boundaries
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      final class LoanController
+      {
+          public function approve(ServerRequestInterface $request): ResponseInterface
+          {
+              $id = (int) $request->getAttribute('id');
+              $row = $this->pdo->query("SELECT * FROM loans WHERE id = {$id}")->fetch();
+              $approved = $row['score'] >= 700 && $row['debt'] < 10_000;
+
+              return new HtmlResponse(
+                  '<p>' . ($approved ? 'Approved' : 'Declined') . '</p>',
+              );
+          }
+      }
+  assert:
+    - type: regex
+      value: '\bSoC\b|Separation of Concerns'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names SoC or Separation of Concerns, explains that the controller mixes HTTP adaptation, persistence, loan policy, and presentation, and recommends boundaries that fit those concerns. Do not require a specific architecture not supplied by the prompt.'
+  metadata:
+    id: php-solid-review:soc-controller-mixes-boundaries
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:single-level-mixed-detail
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      public function publish(Article $article): void
+      {
+          $this->validator->validate($article);
+
+          $boundary = bin2hex(random_bytes(16));
+          $metadata = json_encode([
+              'article' => [
+                  'id' => (string) $article->id(),
+              ],
+              'metadata' => [
+                  'published_at' => $this->clock->now()->format(DATE_ATOM),
+                  'schema_version' => 3,
+              ],
+          ], JSON_THROW_ON_ERROR);
+
+          $payload = implode("\r\n", [
+              "--{$boundary}",
+              'Content-Disposition: form-data; name="metadata"',
+              'Content-Type: application/json',
+              '',
+              $metadata,
+              "--{$boundary}",
+              'Content-Disposition: form-data; name="body"',
+              'Content-Type: text/plain; charset=utf-8',
+              '',
+              trim(strip_tags(html_entity_decode($article->body()))),
+              "--{$boundary}--",
+              '',
+          ]);
+
+          $this->client->post('/articles', [
+              'body' => $payload,
+              'headers' => [
+                  'Content-Type' => "multipart/form-data; boundary={$boundary}",
+              ],
+          ]);
+      }
+  assert:
+    - type: icontains
+      value: Single Level of Abstraction
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names Single Level of Abstraction, explains that high-level publishing flow is interrupted by low-level payload mapping and serialization, and suggests one purpose-named extraction rather than wrappers for every line.'
+  metadata:
+    id: php-solid-review:single-level-mixed-detail
+    skill: php-solid-review
+    kind: review
+
+- description: php-solid-review:iosp-logic-interleaved-with-io
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-solid-review/SKILL.md
+    code: |
+      public function sendReminders(DateTimeImmutable $today): void
+      {
+          foreach ($this->orders->findOpen() as $order) {
+              $graceDays = $order->customer()->isEnterprise() ? 14 : 3;
+              $reminderDate = $order->dueDate()->modify("+{$graceDays} days");
+
+              if (
+                  $reminderDate < $today
+                  && !$order->isDisputed()
+                  && $order->reminderCount() < 3
+              ) {
+                  $message = sprintf(
+                      'Order %s is %d days overdue',
+                      $order->number(),
+                      $order->dueDate()->diff($today)->days,
+                  );
+                  $this->mailer->send($order->customerEmail(), $message);
+                  $this->orders->markReminderSent($order->id());
+              }
+          }
+      }
+
+      // Reminder eligibility is reused by reporting and changes independently.
+      // Its tests currently require repository and mailer test doubles.
+  assert:
+    - type: regex
+      value: '\bIOSP\b|Integration Operation Segregation Principle'
+    - type: llm-rubric
+      value: 'Pass only if the review explicitly names IOSP, identifies decision/selection logic interleaved with repository and mail integration, and recommends a meaningful pure selection or decision operation plus clear orchestration. Fail if it merely asks for many one-line wrappers.'
+  metadata:
+    id: php-solid-review:iosp-logic-interleaved-with-io
+    skill: php-solid-review
+    kind: review
