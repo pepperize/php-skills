@@ -13,6 +13,18 @@ description: Use when writing, refactoring, or reviewing PHP production code aro
 - Avoid passing non-trivial method calls directly as arguments when an intermediate variable would clarify intent. Name semantically important intermediate results.
 - Prefer simple, common words that non-native speakers can read without looking them up.
 
+## Dependency Names
+
+Name each injected dependency after its complete declared short type, converted to lower camel case. Preserve role suffixes such as `Repository`, `Factory`, `Generator`, `Service`, `Client`, and `Interface`; they distinguish the collaborator from the values it returns.
+
+```php
+private PublicUrlGenerator $publicUrlGenerator;
+private ApartmentLayoutRepository $apartmentLayoutRepository;
+private LocalizedApartmentLayoutFactory $localizedApartmentLayoutFactory;
+```
+
+Never replace the type-derived name of a single dependency with a plural resource noun such as `$publicUrls`, `$apartmentLayouts`, or `$localizedApartmentLayouts`. Use plural names for actual collections.
+
 ## Debuggable Composition
 
 When constructing an aggregate result such as a page ViewModel, assign each repository, service, or factory result to a semantically named local variable before passing it to the constructor. Do not inline these collaborator calls as constructor arguments. The local variables must make intermediate values and types directly inspectable in an IDE or debugger. Literals and already-available variables may still be passed directly.
@@ -121,6 +133,7 @@ Do not add production code only to make tests easier. Avoid test-only constructo
 Before finalizing PHP code changes:
 
 - For a non-trivial implementation or refactor, also use `php-solid-review` to review the resulting diff against only the engineering principles that materially apply. Fix meaningful findings before finalizing; do not enumerate principles that have no finding.
+- Review every new or renamed injected dependency and use the complete declared short type in lower camel case.
 - Review every newly added or renamed method.
 - Classify each as accessor/property, boolean predicate, action/operation, or factory/construction helper.
 - Accessors may use noun names. Predicates should use `is`, `has`, `can`, `should`, or similar.

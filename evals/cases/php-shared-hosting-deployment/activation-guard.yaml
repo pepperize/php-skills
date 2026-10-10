@@ -1,0 +1,98 @@
+- description: php-shared-hosting-deployment:missing-markers
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      Root AGENTS.md says only "Use Composer and run PHPUnit". The project has
+      PDO SQLite dependencies and an SSH shared-hosting workflow. Apply this
+      deployment skill and select a deployment example.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the skill remains inactive because root AGENTS.md lacks explicit hosting and database markers, no example is selected from inferred dependencies, and markers are not added just to bypass the guard.'
+  metadata:
+    id: php-shared-hosting-deployment:missing-markers
+    skill: php-shared-hosting-deployment
+    kind: apply
+
+- description: php-shared-hosting-deployment:quoted-markers
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      Root AGENTS.md has only a fenced documentation example:
+      ```markdown
+      <!-- php-skills:hosting:shared -->
+      <!-- php-skills:database:sqlite -->
+      ```
+      There are no standalone activation comments outside the code fence.
+      Select the deployment example.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the skill remains inactive because example text in a code fence does not activate a deployment profile.'
+  metadata:
+    id: php-shared-hosting-deployment:quoted-markers
+    skill: php-shared-hosting-deployment
+    kind: apply
+
+- description: php-shared-hosting-deployment:mariadb-profile
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      Root AGENTS.md contains these standalone comments:
+      <!-- php-skills:hosting:shared -->
+      <!-- php-skills:database:mariadb -->
+      Select the deployment example. The existing application uses MariaDB,
+      server-rendered PHP and public/index.php, without a JavaScript frontend.
+  assert:
+    - type: contains
+      value: mariadb-example
+    - type: llm-rubric
+      value: 'Pass only if the MariaDB example is selected and its tested release mechanism reused, public-directory handling is adapted consistently to public/index.php, and Vue/browser tooling is not made a database requirement.'
+  metadata:
+    id: php-shared-hosting-deployment:mariadb-profile
+    skill: php-shared-hosting-deployment
+    kind: apply
+
+- description: php-shared-hosting-deployment:conflicting-markers
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      Root AGENTS.md contains these standalone comments:
+      <!-- php-skills:hosting:shared -->
+      <!-- php-skills:database:sqlite -->
+      <!-- php-skills:database:mariadb -->
+      Select the appropriate deployment example.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the skill remains inactive because both database markers are present and the answer does not silently choose a database, copy both examples or remove a marker without a confirmed answer.'
+  metadata:
+    id: php-shared-hosting-deployment:conflicting-markers
+    skill: php-shared-hosting-deployment
+    kind: apply
+
+- description: php-shared-hosting-deployment:sqlite-profile
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-shared-hosting-deployment/SKILL.md
+    task: |
+      Root AGENTS.md contains these standalone comments:
+      <!-- php-skills:hosting:shared -->
+      <!-- php-skills:database:sqlite -->
+      Select the deployment example and describe the initial settings.
+      The existing server-rendered app has public/index.php.
+  assert:
+    - type: contains
+      value: sqlite-example
+    - type: llm-rubric
+      value: 'Pass only if the SQLite example is selected, the working release mechanics are reused, html/<site> and files/<site> conventions and SSH_USERNAME/SSH_PASSWORD are retained, and MariaDB/Vue are not required.'
+  metadata:
+    id: php-shared-hosting-deployment:sqlite-profile
+    skill: php-shared-hosting-deployment
+    kind: apply

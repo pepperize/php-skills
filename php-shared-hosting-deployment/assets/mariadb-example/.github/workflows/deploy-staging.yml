@@ -1,0 +1,209 @@
+name: Deploy to staging
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shared-hosting-account
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment:
+      name: staging
+      url: https://staging.example.com/
+    env:
+      DEPLOYMENT_ARCHIVE: deployment-artifact/application.tar.gz
+      DEPLOYMENT_NAME: staging
+      EXPECTED_SMOKE_TEXT: ${{ vars.EXPECTED_SMOKE_TEXT }}
+      DEPLOYMENT_URL: https://staging.example.com/
+      DEPLOY_PATH: html/example.com/staging
+      PRIVATE_PATH: files/example.com/staging
+      RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      EXPECTED_COMMIT: ${{ github.sha }}
+      SSH_HOST: ${{ vars.SSH_HOST }}
+      SSH_HOST_KEY: ${{ vars.SSH_HOST_KEY }}
+      SSH_PORT: 22
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download deployment archive
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: application-${{ github.sha }}
+          path: deployment-artifact
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install the locked browser test runner
+        run: |
+          npm --prefix frontend ci --no-audit --no-fund
+          npm --prefix frontend exec -- playwright install --with-deps chromium
+
+      - name: Install password-based SSH client
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes sshpass
+
+      - name: Inspect unfinished staging candidate
+        id: pending
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: bash deployment/run-release-recovery.sh inspect
+
+      - name: Restore unfinished staging candidate
+        id: recover_pending
+        if: ${{ steps.pending.outputs.pending == 'true' }}
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          RELEASE_ID: ${{ steps.pending.outputs.release_id }}
+          ROLLBACK_RELEASE_ID: ${{ steps.pending.outputs.rollback_release_id }}
+        run: bash deployment/run-release-recovery.sh restore
+
+      - name: Smoke-test restored release before deployment
+        id: pending_recovery_smoke
+        env:
+          RELEASE_ID: ${{ steps.pending.outputs.rollback_release_id }}
+        if: >-
+          ${{ steps.recover_pending.outcome == 'success' &&
+              steps.recover_pending.outputs.smoke_required == 'true' }}
+        run: |
+          bash deployment/check-deployment.sh "$DEPLOYMENT_URL"
+          EXPECTED_COMMIT='' npm --prefix frontend run test:deployment
+
+      - name: Remove handled unfinished staging candidate
+        id: pending_recovery_cleanup
+        if: >-
+          ${{ always() &&
+              steps.pending.outputs.pending == 'true' &&
+              steps.recover_pending.outcome == 'success' &&
+              (steps.recover_pending.outputs.smoke_required == 'false' ||
+               steps.pending_recovery_smoke.outcome == 'success') }}
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          RECOVERY_SMOKE_REQUIRED: ${{ steps.recover_pending.outputs.smoke_required }}
+          RECOVERY_SMOKE_VERIFIED: ${{ steps.pending_recovery_smoke.outcome == 'success' }}
+          RELEASE_ID: ${{ steps.pending.outputs.release_id }}
+          ROLLBACK_RELEASE_ID: ${{ steps.pending.outputs.rollback_release_id }}
+        run: bash deployment/run-release-recovery.sh cleanup
+
+      - name: Report unfinished staging state requiring manual recovery
+        if: >-
+          ${{ always() &&
+              (steps.pending.outcome == 'failure' ||
+               (steps.pending.outputs.pending == 'true' &&
+                (steps.recover_pending.outcome == 'failure' ||
+                 (steps.recover_pending.outputs.smoke_required == 'true' &&
+                  steps.pending_recovery_smoke.outcome != 'success') ||
+                 steps.pending_recovery_cleanup.outcome == 'failure'))) }}
+        run: |
+          echo '::error::The unfinished staging candidate could not be recovered safely. All available releases were preserved.'
+          {
+            echo '### Manual staging recovery required'
+            echo
+            echo 'The unfinished candidate could not be restored, verified and cleaned up before deployment.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy release over SSH
+        id: deploy
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: bash deployment/deploy-release.sh
+
+      - name: Run staging smoke test
+        id: smoke
+        run: |
+          bash deployment/check-deployment.sh "$DEPLOYMENT_URL"
+          npm --prefix frontend run test:deployment
+
+      - name: Retain verified staging release pair
+        id: retention
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          ROLLBACK_RELEASE_ID: ${{ steps.deploy.outputs.rollback_release_id }}
+        run: bash deployment/run-release-retention.sh
+
+      - name: Restore previous staging release after candidate failure
+        id: recover
+        if: >-
+          ${{ always() &&
+              steps.deploy.outputs.candidate_prepared == 'true' &&
+              (steps.deploy.outcome == 'failure' ||
+               steps.smoke.outcome == 'failure' ||
+               steps.retention.outcome == 'failure') }}
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          ROLLBACK_RELEASE_ID: ${{ steps.deploy.outputs.rollback_release_id }}
+        run: bash deployment/run-release-recovery.sh restore
+
+      - name: Smoke-test restored staging release
+        id: recovery_smoke
+        env:
+          RELEASE_ID: ${{ steps.deploy.outputs.rollback_release_id }}
+        if: >-
+          ${{ always() &&
+              steps.recover.outcome == 'success' &&
+              steps.recover.outputs.smoke_required == 'true' }}
+        run: |
+          bash deployment/check-deployment.sh "$DEPLOYMENT_URL"
+          EXPECTED_COMMIT='' npm --prefix frontend run test:deployment
+
+      - name: Remove handled failed staging candidate
+        id: recovery_cleanup
+        if: >-
+          ${{ always() &&
+              steps.recover.outcome == 'success' &&
+              (steps.recover.outputs.smoke_required == 'false' ||
+               steps.recovery_smoke.outcome == 'success') }}
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          RECOVERY_SMOKE_REQUIRED: ${{ steps.recover.outputs.smoke_required }}
+          RECOVERY_SMOKE_VERIFIED: ${{ steps.recovery_smoke.outcome == 'success' }}
+          ROLLBACK_RELEASE_ID: ${{ steps.deploy.outputs.rollback_release_id }}
+        run: bash deployment/run-release-recovery.sh cleanup
+
+      - name: Report staging state requiring manual recovery
+        if: >-
+          ${{ always() &&
+              steps.deploy.outputs.candidate_prepared == 'true' &&
+              (steps.deploy.outcome == 'failure' ||
+               steps.smoke.outcome == 'failure' ||
+               steps.retention.outcome == 'failure') &&
+              (steps.recover.outcome == 'failure' ||
+               (steps.recover.outputs.smoke_required == 'true' &&
+                steps.recovery_smoke.outcome != 'success') ||
+               steps.recovery_cleanup.outcome == 'failure') }}
+        run: |
+          echo '::error::Staging releases were preserved because automatic recovery could not be verified. Manual recovery is required.'
+          {
+            echo '### Manual staging recovery required'
+            echo
+            echo 'Automatic recovery did not reach verified candidate cleanup. All available releases were preserved.'
+          } >> "$GITHUB_STEP_SUMMARY"

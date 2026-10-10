@@ -1,0 +1,209 @@
+name: Deploy to production
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: shared-hosting-account
+  cancel-in-progress: false
+
+jobs:
+  verify-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      commit_sha: ${{ steps.release.outputs.commit_sha }}
+      release_id: ${{ steps.release.outputs.release_id }}
+      release_tag: ${{ steps.release.outputs.release_tag }}
+      staging_run_id: ${{ steps.release.outputs.staging_run_id }}
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Verify approved staging release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_REF_NAME: ${{ github.ref_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$RELEASE_REF_TYPE" != 'tag' ]]; then
+            echo 'Run this workflow from an annotated production tag, not a branch.' >&2
+            exit 1
+          fi
+
+          if [[ ! "$RELEASE_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo 'Production requires vMAJOR.MINOR.PATCH.' >&2
+            exit 1
+          fi
+
+          # Checkout may replace an annotated local tag with a commit ref.
+          gh auth setup-git --hostname github.com --force
+          git fetch --no-tags origin \
+            "+refs/tags/$RELEASE_REF_NAME:refs/tags/$RELEASE_REF_NAME" \
+            '+refs/heads/main:refs/remotes/origin/main'
+          [[ "$(git cat-file -t "refs/tags/$RELEASE_REF_NAME")" == tag ]]
+          commit_sha="$(git rev-parse "refs/tags/$RELEASE_REF_NAME^{commit}")"
+          [[ "$commit_sha" == "$GITHUB_SHA" && "$commit_sha" == "$(git rev-parse HEAD)" ]]
+          git merge-base --is-ancestor "$commit_sha" origin/main
+
+          staging_run_id=''
+
+          for attempt in {1..40}; do
+            # jq expands $runs; Bash must preserve the quoted expression.
+            # shellcheck disable=SC2016
+            staging_run_state="$(
+              gh api --method GET \
+                "/repos/$GITHUB_REPOSITORY/actions/workflows/deploy-staging.yml/runs" \
+                -f head_sha="$commit_sha" \
+                -f per_page=100 \
+                --jq '
+                  ([.workflow_runs[]] | sort_by(.run_number)) as $runs
+                  | [
+                      (($runs | map(select(.conclusion == "success")) | last | .id) // ""),
+                      (($runs | last | .status) // ""),
+                      (($runs | last | .conclusion) // "")
+                    ]
+                  | join("|")
+                '
+            )"
+            IFS='|' read -r staging_run_id staging_run_status staging_run_conclusion \
+              <<< "$staging_run_state"
+
+            if [[ -n "$staging_run_id" ]]; then
+              break
+            fi
+
+            if [[ "$staging_run_status" == 'completed' ]]; then
+              echo "The staging deployment completed with conclusion: $staging_run_conclusion" >&2
+              exit 1
+            fi
+
+            if (( attempt == 40 )); then
+              echo 'Timed out waiting for a successful staging deployment for the tagged commit.' >&2
+              exit 1
+            fi
+
+            echo "Waiting for the staging deployment (attempt $attempt of 40)."
+            sleep 15
+          done
+
+          artifact_name="application-$commit_sha"
+          artifact_id="$(
+            gh api --method GET \
+              "/repos/$GITHUB_REPOSITORY/actions/runs/$staging_run_id/artifacts" \
+              -f per_page=100 \
+              --jq "[.artifacts[] | select(.name == \"$artifact_name\" and .expired == false)][0].id // empty"
+          )"
+
+          if [[ -z "$artifact_id" ]]; then
+            echo 'The successful staging deployment artifact is missing or expired.' >&2
+            exit 1
+          fi
+
+          release_id="$RELEASE_REF_NAME-${commit_sha:0:12}-$GITHUB_RUN_ATTEMPT"
+          {
+            echo "commit_sha=$commit_sha"
+            echo "release_id=$release_id"
+            echo "release_tag=$RELEASE_REF_NAME"
+            echo "staging_run_id=$staging_run_id"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo '### Verified production candidate'
+            echo
+            echo "- Tag: \`$RELEASE_REF_NAME\`"
+            echo "- Commit: \`$commit_sha\`"
+            echo "- Successful staging run: \`$staging_run_id\`"
+            echo "- Production release: \`$release_id\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: verify-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    environment:
+      name: production
+      url: https://example.com/
+    env:
+      DEPLOYMENT_ARCHIVE: deployment-artifact/application.tar.gz
+      DEPLOYMENT_NAME: production
+      EXPECTED_SMOKE_TEXT: ${{ vars.EXPECTED_SMOKE_TEXT }}
+      DEPLOYMENT_URL: https://example.com/
+      DEPLOY_PATH: html/example.com
+      PRIVATE_PATH: files/example.com/production
+      RELEASE_ID: ${{ needs.verify-release.outputs.release_id }}
+      EXPECTED_COMMIT: ${{ needs.verify-release.outputs.commit_sha }}
+      SSH_HOST: ${{ vars.SSH_HOST }}
+      SSH_HOST_KEY: ${{ vars.SSH_HOST_KEY }}
+      SSH_PORT: 22
+
+    steps:
+      - name: Check out approved commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.verify-release.outputs.commit_sha }}
+          persist-credentials: false
+
+      - name: Download staging deployment archive
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: application-${{ needs.verify-release.outputs.commit_sha }}
+          path: deployment-artifact
+          github-token: ${{ github.token }}
+          run-id: ${{ needs.verify-release.outputs.staging_run_id }}
+
+      - name: Install password-based SSH client
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes sshpass
+
+      - name: Deploy approved release over SSH
+        id: deploy
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: bash deployment/deploy-release.sh
+
+      - name: Run production smoke test
+        run: |
+          bash deployment/check-deployment.sh "$DEPLOYMENT_URL"
+
+      - name: Mark release as approved for rollback
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: bash deployment/release-control.sh approve
+
+      - name: Retain approved production release pair
+        env:
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          ROLLBACK_RELEASE_ID: ${{ steps.deploy.outputs.rollback_release_id }}
+        run: bash deployment/run-release-retention.sh
+
+      - name: Record deployed release
+        env:
+          RELEASE_TAG: ${{ needs.verify-release.outputs.release_tag }}
+        run: |
+          {
+            echo '### Production deployment passed'
+            echo
+            echo "- Tag: \`$RELEASE_TAG\`"
+            echo "- Release: \`$RELEASE_ID\`"
+            echo "- URL: $DEPLOYMENT_URL"
+          } >> "$GITHUB_STEP_SUMMARY"

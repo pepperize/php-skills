@@ -4,6 +4,10 @@
   vars:
     skill: file://../php-shared-hosting-deployment/SKILL.md
     task: |
+      Root AGENTS.md contains these standalone comments outside code fences:
+      <!-- php-skills:hosting:shared -->
+      <!-- php-skills:database:mariadb -->
+
       A PHP project will deploy production to an SSH-accessible shared host. The proposed staging environment runs only inside GitHub Actions using the same PHP version, while production uses release directories and an atomic current symlink on the shared host. Review whether this staging design is sufficient and describe the required environment topology.
   assert:
     - type: regex

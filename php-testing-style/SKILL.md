@@ -29,6 +29,7 @@ description: Use when adding or changing PHPUnit tests, fixing failing tests, do
 ## Test Layout
 
 - When test data represents the same concept as a production value, use the same domain-oriented variable name unless the test needs to distinguish expected, actual, or multiple variants.
+- Name a mock, stub, fake, or real collaborator passed as an injected dependency after that dependency's complete declared short type in lower camel case. Do not replace it with a plural resource noun.
 - Prefer code locality over front-loaded variable blocks. Create inputs, expected values, and intermediates near the mock expectation, act step, or assertion that uses them.
 - Do not split setup into a front-loaded data block followed by a separate stubbing block. Keep setup in execution order.
 - Use empty lines only between major blocks such as Arrange/Act/Assert or Given/When/Then.

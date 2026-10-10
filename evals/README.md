@@ -8,7 +8,7 @@ The cases load each skill from the repository's existing `SKILL.md` files throug
 
 The initial suite focuses on rules that are concrete enough to evaluate consistently:
 
-- `php-agent-instructions`: authentication, authorization, deployment, and design-review/self-review routing in the installed instruction block.
+- `php-agent-instructions`: authentication, authorization, guarded deployment, and design-review/self-review routing, including asking for hosting and database choices before recording activation markers.
 - `php-testing-style`: PHPUnit data providers, assertions, test naming, `$actual` result variables, authentication integration coverage, and authorization route inventories.
 - `php-readable-code`: avoiding production API that exists only for tests, naming costly data retrieval operations with `fetch...`, and keeping composed values visible to IDE debuggers.
 - `php-solid-review`: behavior-based coverage of all 17 engineering principles, explicit principle naming, implementation self-review, manual review, relevance, positive cases, and trade-offs that should not trigger premature abstractions.
@@ -20,7 +20,7 @@ The initial suite focuses on rules that are concrete enough to evaluate consiste
 - `php-authentication-security`: Mezzio authentication composition, password policy and hashing, enumeration-safe login throttling, recovery-token lifecycle, and revocable session lifecycle.
 - `php-logging-exceptions`: security-event structure, sensitive-field redaction, pseudonymous correlation, and abuse controls.
 - `php-rbac-authorization`: typed Laminas/Mezzio RBAC boundaries, method-local controller permissions, protected-route composition, independent capabilities, and privilege-change freshness.
-- `php-shared-hosting-deployment`: representative shared-host staging, exact staging-to-production artifact promotion, step-scoped secrets, immutable action pins, host-capability checks, rollback compatibility, and fail-closed release retention.
+- `php-shared-hosting-deployment`: explicit root `AGENTS.md` hosting/database guards, selection of the matching SQLite or MariaDB example, representative shared-host staging, exact artifact promotion, step-scoped secrets, action pins, host capabilities, rollback compatibility, and fail-closed retention.
 
 ## Assertions
 

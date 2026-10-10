@@ -1,0 +1,24 @@
+# Managed by application production deployment
+Options -Indexes -MultiViews
+RewriteEngine On
+
+# The staging subdomain has its own document root and dispatcher below this root.
+RewriteCond %{HTTP_HOST} ^staging\.example\.com$ [NC]
+RewriteRule ^ - [L]
+
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} !^example\.com$ [NC]
+RewriteRule ^ https://example.com%{REQUEST_URI} [R=308,L]
+
+RewriteRule ^(?:releases|shared|private|staging)(?:/|$) - [F,L,NC]
+RewriteCond %{THE_REQUEST} \s/+current(?:[/\s?]) [NC]
+RewriteRule ^ - [F,L]
+
+RewriteRule ^current/backend/public(?:/|$) - [L]
+RewriteRule ^\.well-known/ - [L]
+RewriteRule (^|/)\. - [F,L]
+
+RewriteRule ^$ current/backend/public/app/index.html [L]
+RewriteCond %{DOCUMENT_ROOT}/current/backend/public/$1 -f
+RewriteRule ^(.+)$ current/backend/public/$1 [L]
+RewriteRule ^ current/backend/public/index.php [QSA,L]

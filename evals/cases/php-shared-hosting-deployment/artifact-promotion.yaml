@@ -4,6 +4,10 @@
   vars:
     skill: file://../php-shared-hosting-deployment/SKILL.md
     task: |
+      Root AGENTS.md contains these standalone comments outside code fences:
+      <!-- php-skills:hosting:shared -->
+      <!-- php-skills:database:mariadb -->
+
       Design the build and deployment flow for a PHP application on an SSH-accessible shared host. The proposed flow runs Composer and tests for staging, then checks out the same commit and runs Composer again in the production job. Correct the flow and explain how production should identify what staging accepted.
   assert:
     - type: regex

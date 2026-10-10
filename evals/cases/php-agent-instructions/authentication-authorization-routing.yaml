@@ -24,7 +24,7 @@
     - type: contains
       value: '<!-- php-skills:self-review:end -->'
     - type: llm-rubric
-      value: 'Pass only if the marked self-review block routes login, credentials, password handling, sessions, logout, recovery or verification, throttling, and MFA changes to php-authentication-security; routes roles, permissions, authorization attributes, protected routes or controllers, object-scoped access, and RBAC mappings to php-rbac-authorization; and retains the shared-hosting deployment rule.'
+      value: 'Pass only if the marked self-review block routes login, credentials, password handling, sessions, logout, recovery or verification, throttling, and MFA changes to php-authentication-security; routes roles, permissions, authorization attributes, protected routes or controllers, object-scoped access, and RBAC mappings to php-rbac-authorization; and allows shared-hosting deployment guidance only when root AGENTS.md contains the hosting marker and exactly one SQLite or MariaDB database marker.'
   metadata:
     id: php-agent-instructions:authentication-authorization-routing
     skill: php-agent-instructions

@@ -1,0 +1,15 @@
+# Managed by application staging deployment
+SetEnv APP_BASE_PATH /staging
+
+RewriteEngine On
+
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://example.com%{REQUEST_URI} [R=308,L]
+
+RewriteRule ^(?:releases|shared)(?:/|$) - [F,L,NC]
+
+RewriteCond %{DOCUMENT_ROOT}/staging/current/public/$1 -f
+RewriteRule ^(.+)$ current/public/$1 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ current/public/index.php [QSA,L]

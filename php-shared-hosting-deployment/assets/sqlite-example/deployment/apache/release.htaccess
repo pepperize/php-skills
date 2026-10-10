@@ -1,0 +1,5 @@
+# Managed by application release deployment
+RewriteEngine On
+
+RewriteCond %{THE_REQUEST} \s/+(?:staging/)?(?:current|releases)(?:[/\s?]) [NC]
+RewriteRule ^ - [F,L]

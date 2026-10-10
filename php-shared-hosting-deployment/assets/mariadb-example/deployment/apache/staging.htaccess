@@ -1,0 +1,21 @@
+# Managed by application staging deployment
+Options -Indexes -MultiViews
+RewriteEngine On
+
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://staging.example.com%{REQUEST_URI} [R=308,L]
+RewriteCond %{HTTP_HOST} !^staging\.example\.com$ [NC]
+RewriteRule ^ - [F,L]
+
+RewriteRule ^(?:releases|shared|private)(?:/|$) - [F,L,NC]
+RewriteCond %{THE_REQUEST} \s/+current(?:[/\s?]) [NC]
+RewriteRule ^ - [F,L]
+
+RewriteRule ^current/backend/public(?:/|$) - [L]
+RewriteRule ^\.well-known/ - [L]
+RewriteRule (^|/)\. - [F,L]
+
+RewriteRule ^$ current/backend/public/app/index.html [L]
+RewriteCond %{DOCUMENT_ROOT}/current/backend/public/$1 -f
+RewriteRule ^(.+)$ current/backend/public/$1 [L]
+RewriteRule ^ current/backend/public/index.php [QSA,L]

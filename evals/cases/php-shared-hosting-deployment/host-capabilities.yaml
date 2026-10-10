@@ -4,6 +4,10 @@
   vars:
     skill: file://../php-shared-hosting-deployment/SKILL.md
     task: |
+      Root AGENTS.md contains these standalone comments outside code fences:
+      <!-- php-skills:hosting:shared -->
+      <!-- php-skills:database:mariadb -->
+
       A team asks to copy a symlink-based GitHub Actions deployment to a new shared host. The provider offers SFTP uploads but has not confirmed SSH command execution, symbolic links, atomic rename, a private path outside the document root, or whether PHP CLI matches PHP-FPM. Explain what must be established before implementation and what claims should be avoided meanwhile.
   assert:
     - type: regex

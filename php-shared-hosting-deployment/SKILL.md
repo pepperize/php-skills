@@ -1,9 +1,24 @@
 ---
 name: php-shared-hosting-deployment
-description: Designs and reviews GitHub Actions deployments for PHP applications on SSH-accessible shared hosting, including artifact promotion, release directories, private persistent state, smoke checks, rollback, and safe retention. Use for traditional shared hosts; do not use for containers, PaaS, or orchestrated cloud deployments.
+description: Creates or reviews PHP shared-hosting deployments using tested SQLite or MariaDB pipeline examples. Activate only when root AGENTS.md explicitly contains the shared-hosting marker and exactly one SQLite or MariaDB database marker. Use for SSH-accessible shared hosting.
 ---
 
 # PHP Shared Hosting Deployment
+
+## Activation Guard
+
+Before applying this skill, read the project's root `AGENTS.md`. Apply it only when that file contains the standalone marker `<!-- php-skills:hosting:shared -->` and exactly one of `<!-- php-skills:database:sqlite -->` or `<!-- php-skills:database:mariadb -->`. Count actual standalone comments outside fenced examples, not mentions in prose, quoted templates or this skill's instructions.
+
+Use only the example selected by the database marker. Missing root `AGENTS.md`, a missing marker, an unsupported database or conflicting database markers keeps this skill inactive, even if workflows or dependencies suggest shared hosting. Explain the missing profile briefly. The `php-agent-instructions` skill records user-confirmed answers; do not add markers merely to activate this skill. Markers authorize use of guidance, not host provisioning or live deployment.
+
+## Reuse a Working Pipeline
+
+- SQLite: [sqlite-example](assets/sqlite-example/.github/workflows/deploy-staging.yml).
+- MariaDB: [mariadb-example](assets/mariadb-example/.github/workflows/deploy-staging.yml).
+- Read [copy-examples.md](references/copy-examples.md), then use `scripts/copy-pipeline.py --database sqlite --site example.com --target <project-directory>` with the marked database and actual site. Use `--dry-run` to inspect destinations. The helper verifies template hashes, preserves executable modes and refuses existing files.
+- Preserve the tested release, recovery, approval, rollback and retention scripts. Adapt the site, host settings and project-owned build, prepare and smoke checks. Do not regenerate the deployment engine or introduce a configuration framework for ordinary setup.
+- Both examples use `html/<site>` and `html/<site>/staging`, with private state under `files/<site>/production` and `files/<site>/staging`. Both use environment-scoped `SSH_USERNAME` and `SSH_PASSWORD`. Keep these conventions unless the target has a demonstrated difference.
+- For an existing pipeline, copy into a temporary directory and merge only the required changes. Read [project-contract.md](references/project-contract.md) for settings and database preparation, or [example-comparison.md](references/example-comparison.md) for layout differences. Frontend tooling, public-directory layout and staging URL style are independent of the database.
 
 ## Scope
 
@@ -66,7 +81,7 @@ Automatic production rollback is safe only when the captured predecessor is know
 
 Read [github-actions.md](references/github-actions.md) when creating or reviewing workflows. It explains workflow separation, environment controls, secret scope, action pinning, artifact verification, and the bundled starter.
 
-The files under [assets/shared-hosting-example](assets/shared-hosting-example) are an illustrative starter. Adapt every `REPLACE_...` value and the archive manifest, preparation commands, document-root arrangement, and smoke contract. The starter deliberately preserves release directories; add automatic retention only with the fail-closed model and meaningful filesystem tests described in [release-model.md](references/release-model.md).
+Use the selected SQLite or MariaDB example for a complete pipeline with tested recovery and retention. The files under [assets/shared-hosting-example](assets/shared-hosting-example) remain a smaller illustrative starter for hosts whose control panel can point directly at `current/public`. It has different authentication and activation assumptions; select it only when those fit the target. Adapt every `REPLACE_...` value and the archive manifest, preparation commands, document-root arrangement, and smoke contract. This minimal starter deliberately preserves release directories.
 
 ## Verification
 

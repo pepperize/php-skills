@@ -14,7 +14,7 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 - `php-authentication-security`: secure password authentication, login throttling, recovery and verification tokens, session lifecycle, and Mezzio authentication integration.
 - `php-rbac-authorization`: RBAC authorization guidance for method-local permission attributes, centralized role-to-permission mappings, capability checks, and object-scoped access rules.
 - `php-domain-clarification`: clarification workflow before domain-sensitive implementation changes.
-- `php-shared-hosting-deployment`: GitHub Actions deployment guidance for PHP applications on SSH-accessible shared hosting, including exact artifact promotion, immutable releases, private persistent state, smoke gates, rollback, and fail-closed retention.
+- [php-shared-hosting-deployment](php-shared-hosting-deployment/SKILL.md): guarded shared-hosting deployment guidance with copyable SQLite and MariaDB examples, verified copying, exact artifact promotion, private state, recovery, rollback and tested retention.
 - `php-clean-architecture`: Clean Architecture guidance for PHP projects. This skill is guarded and should only be used when the project's main instruction file explicitly states Clean Architecture.
 - `php-ddd-architecture`: DDD guidance for PHP projects, including repository ownership and contracts, framework configuration placement, web boundary naming, form-validation middleware, and Slim route URL generation. This skill is guarded and should only be used when the project's main instruction file explicitly states DDD or Domain-Driven Design.
 - `php-database-migrations`: migration creation, framework selection, timestamp naming, and applied-migration integrity conventions for PHP projects.
@@ -26,6 +26,24 @@ Architecture skills are intentionally conditional. They should not be activated 
 Use `php-clean-architecture` only when `AGENTS.md`, `CLAUDE.md`, or the project's equivalent main instruction file explicitly states that the project uses Clean Architecture.
 
 Use `php-ddd-architecture` only when the main instruction file explicitly states that the project uses DDD or Domain-Driven Design.
+
+## Shared Hosting Skill Activation
+
+Use `php-agent-instructions` to record whether the project uses SSH-accessible shared hosting and whether its database is SQLite or MariaDB. The deployment skill activates only when root `AGENTS.md` contains the standalone shared-hosting marker and exactly one supported database marker:
+
+```markdown
+<!-- php-skills:hosting:shared -->
+<!-- php-skills:database:sqlite -->
+```
+
+Use `<!-- php-skills:database:mariadb -->` instead for MariaDB. Missing or conflicting markers keep deployment guidance inactive. A confirmed profile can be installed from the target project root with:
+
+```bash
+python3 /path/to/php-agent-instructions/scripts/install-agent-instructions.py \
+  --hosting shared --database sqlite
+```
+
+These markers select guidance and the matching example; they do not authorize live deployment.
 
 ## Local Installation
 

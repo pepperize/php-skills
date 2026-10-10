@@ -1,0 +1,20 @@
+# Managed by application production deployment
+RewriteEngine On
+
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} !^example\.com$ [NC]
+RewriteRule ^ https://example.com%{REQUEST_URI} [R=308,L]
+
+RewriteRule ^(?:releases|shared)(?:/|$) - [F,L,NC]
+
+RewriteCond %{THE_REQUEST} \s/+current(?:[/\s?]) [NC]
+RewriteRule ^ - [F,L]
+
+RewriteRule ^current/public(?:/|$) - [L]
+
+RewriteRule ^\.well-known/ - [L]
+
+RewriteCond %{DOCUMENT_ROOT}/current/public/$1 -f
+RewriteRule ^(.+)$ current/public/$1 [L]
+
+RewriteRule ^ current/public/index.php [QSA,L]

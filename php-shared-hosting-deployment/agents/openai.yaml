@@ -1,0 +1,4 @@
+interface:
+  display_name: "PHP Shared Hosting Deployment"
+  short_description: "Reuse marked SQLite or MariaDB deployment examples"
+  default_prompt: "Use $php-shared-hosting-deployment to reuse the deployment example selected by this project's AGENTS.md hosting and database markers."

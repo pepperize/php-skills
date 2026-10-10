@@ -1,0 +1,16 @@
+- description: php-agent-instructions:ask-deployment-profile
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-agent-instructions/SKILL.md
+    task: |
+      Install the PHP self-review instructions. The root AGENTS.md contains
+      only "Run composer test" and the user has not supplied hosting or database
+      choices. Describe your next step without modifying this repository.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the answer asks whether the project uses SSH-accessible shared hosting and, if yes, SQLite or MariaDB. It must not infer the profile or add activation markers without an answer; it may proceed with the independent self-review block.'
+  metadata:
+    id: php-agent-instructions:ask-deployment-profile
+    skill: php-agent-instructions
+    kind: apply

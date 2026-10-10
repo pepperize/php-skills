@@ -1,0 +1,81 @@
+name: Build
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Start PHP 8.4 and MariaDB
+        run: |
+          cp .env.example .env
+          docker compose up -d --build db mailpit app
+
+      - name: Validate and test the application
+        run: |
+          docker compose exec -T app composer validate --strict --no-check-publish
+          docker compose exec -T app composer check-platform-reqs
+          docker compose exec -T app composer migrate
+          docker compose exec -T app composer test
+          scripts/smoke-http.sh http://localhost:8080
+
+      - name: Test release preparation, recovery, rollback and retention
+        run: |
+          for script in deployment/*.sh deployment/tests/*.sh scripts/*.sh; do bash -n "$script"; done
+          bash deployment/tests/release-retention-test.sh
+          python3 -m unittest discover -s deployment/tests
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build and browser-test the compiled test page
+        env:
+          VITE_SOURCE_COMMIT: ${{ github.sha }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          npm --prefix frontend ci --no-audit --no-fund
+          npm --prefix frontend run build
+          npm --prefix frontend exec -- playwright install --with-deps chromium
+          npm --prefix frontend run test:deployment
+
+      - name: Install production dependencies
+        run: |
+          docker compose exec -T app composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --optimize-autoloader
+          docker compose exec -T app composer check-platform-reqs --no-dev
+          scripts/smoke-http.sh http://localhost:8080
+
+      - name: Create deployment archive
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          bash deployment/build.sh "$RUNNER_TEMP/release"
+          printf '%s\n' "$SOURCE_COMMIT" > "$RUNNER_TEMP/release/source-commit"
+          tar -czf application.tar.gz -C "$RUNNER_TEMP/release" bootstrap.php cli-config.php migrations.php composer.json composer.lock backend deployment vendor source-commit
+
+      - name: Upload deployment archive
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: application-${{ github.sha }}
+          path: application.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Stop isolated services
+        if: always()
+        run: docker compose down -v

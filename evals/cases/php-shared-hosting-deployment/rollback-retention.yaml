@@ -4,6 +4,10 @@
   vars:
     skill: file://../php-shared-hosting-deployment/SKILL.md
     task: |
+      Root AGENTS.md contains these standalone comments outside code fences:
+      <!-- php-skills:hosting:shared -->
+      <!-- php-skills:database:mariadb -->
+
       Review this plan for a PHP application on shared hosting:
 
       Before uploading, delete the oldest release by modification time to create space. After activation, delete every release except the newest two. If the production smoke test fails, automatically switch to the previous directory. The release also contains a migration that removes a column used by the old code.

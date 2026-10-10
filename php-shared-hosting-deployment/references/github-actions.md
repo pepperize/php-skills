@@ -41,6 +41,8 @@ Repository files cannot prove GitHub-side environment rules, tag rulesets, secre
 
 ## Bundled starter
 
+For the full working SQLite or MariaDB pipeline, select the example marked in root `AGENTS.md` and follow [copy-examples.md](copy-examples.md). Both use the same conventional directory layout, environment-scoped `SSH_USERNAME`/`SSH_PASSWORD`, and tested recovery and retention.
+
 The [shared-hosting example](../assets/shared-hosting-example) demonstrates a compact baseline with:
 
 - a reusable build that produces one artifact;
