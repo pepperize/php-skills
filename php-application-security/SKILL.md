@@ -5,6 +5,10 @@ description: Applies company PHP application security guidance. Use when adding,
 
 # PHP Application Security
 
+## Request Validation
+
+Treat external input as untrusted even when browser validation succeeds. Use `php-request-validation` for HTTP input contracts, DTO hydration, validation middleware, and Problem Details. Keep domain and application invariants authoritative for every entry point, independently of HTTP middleware.
+
 ## Regex Safety
 
 Regex is acceptable for validation, but do not use patterns with nested, ambiguous, or repeated repetitions that can cause excessive backtracking or stack overflow for large inputs.

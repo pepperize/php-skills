@@ -30,18 +30,19 @@ The exact session and adapter classes may follow the application. Preserve the o
 
 ## Password Policy And Storage
 
-- For password-only authentication, require at least 15 Unicode characters.
-- Allow at least 64 Unicode characters and set a documented, bounded upper limit to protect memory and hashing work. Count characters for the user-facing policy and validate the algorithm's byte limits separately.
+- For new passwords at registration, password change, and password reset, require at least 15 Unicode characters when authentication is password-only.
+- Allow at least 64 Unicode characters and set a documented, bounded upper limit to protect memory and hashing work. Count characters for the user-facing policy; technical byte limits must accommodate every supported character within the advertised character limit.
 - Allow spaces and all printable Unicode characters. Do not impose uppercase, lowercase, digit, symbol, or periodic password-change rules.
 - Reject common, expected, context-specific, and known-compromised passwords with a local or privacy-preserving blocklist check. Never send the plaintext password to an external service.
 - Allow password managers, paste, and browser autofill.
 - Do not trim, case-fold, or otherwise silently rewrite passwords.
 - If the application normalizes Unicode, use NFC consistently before the initial hash and every verification. Do not change normalization for existing hashes without a compatible migration strategy.
-- Treat the complete accepted password as significant.
+- Treat the complete accepted new password as significant; never silently truncate it.
 - Prefer Argon2id when the deployment supports it and its memory and time cost have been measured on production-like hardware.
-- When using bcrypt, explicitly reject passwords over bcrypt's 72-byte input boundary or choose an algorithm without that boundary. A character limit alone does not enforce a byte limit for Unicode input.
+- Choose an algorithm that supports the complete accepted input. Direct bcrypt truncates at 72 bytes and cannot satisfy this Unicode policy for new hashes. If no suitable algorithm is available, report the deployment constraint rather than silently narrowing the policy or truncating input.
+- Keep existing bcrypt credentials under a documented verification and migration policy. Do not apply new registration limits or normalization rules retroactively to existing logins. If the legacy policy allowed input beyond 72 bytes, require an explicit password change or reset before migration; a successful bcrypt verification does not authenticate the suffix and must not automatically bind it into a replacement hash.
 - Size the password-hash column for algorithm changes; use at least 255 characters.
-- After every successful verification, call `password_needs_rehash()` with the current algorithm and options and persist a replacement hash when needed.
+- After every successful verification, call `password_needs_rehash()` with the current algorithm and options. Persist a replacement hash when needed and permitted by the documented legacy-migration policy.
 - Use a precomputed dummy hash with the same algorithm and cost as real hashes for unknown-account verification paths. Rotate it when the configured algorithm or cost changes.
 
 Keep hashing policy in one collaborator:
@@ -175,7 +176,7 @@ When implementing MFA, use a maintained protocol implementation, protect recover
 Before finalizing authentication changes, verify that:
 
 - the Mezzio authentication stack is used when compatible and third-party types remain at infrastructure boundaries;
-- password length, Unicode, blocklist, algorithm limits, dummy verification, and rehash behavior are explicit and tested;
+- password length, Unicode, blocklist, algorithm limits, legacy credential compatibility, dummy verification, and safe rehash behavior are explicit and tested;
 - login limiting uses client and HMAC-derived account keys and fails closed if its required state is unavailable;
 - public login and reset outcomes do not reveal whether an account exists or can authenticate;
 - recovery and verification tokens are random, hashed at rest, expiring, bounded, and atomically single-use;

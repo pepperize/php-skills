@@ -1,0 +1,26 @@
+- description: php-request-validation:browser-submissions
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-request-validation/SKILL.md
+    project_instructions: |
+      A server-rendered signup page has email and age inputs, native required
+      and minimum constraints, an error summary, and existing CSRF protection.
+      POST /signup accepts email as a JSON string and age as a JSON integer.
+      On success it returns HTTP 201 JSON with an application-owned redirect.
+      Invalid requests return HTTP 422 application/problem+json with errors
+      containing pointer, detail, and code. Do not add frontend dependencies.
+    task: |
+      Recommend and sketch the default submission and error-display flow for
+      this form. Cover native browser validation, the JSON age type, a 422
+      response, an unmapped field error, network failure, and success. Explain
+      where entered values remain and when navigation or reset is appropriate.
+  assert:
+    - type: contains
+      value: fetch(
+    - type: llm-rubric
+      value: 'Pass only if JavaScript submits without navigating away, preserves native HTML validation, sends age in the required JSON type without disguising invalid input, preserves CSRF protection, checks HTTP failure responses explicitly, and uses Problem Details for safe field feedback plus an accessible summary that retains unmapped errors. Inputs must remain unchanged after 422 or network failure, and navigation or reset must happen only after confirmed success. Fail if response 422 is treated as a fetch network rejection, server messages are inserted as HTML, JavaScript-managed submissions are treated as optional rather than the default, ordinary HTML fallback is imposed, a validation framework is added, or browser checks replace server validation.'
+  metadata:
+    id: php-request-validation:browser-submissions
+    skill: php-request-validation
+    kind: apply

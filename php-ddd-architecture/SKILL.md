@@ -106,105 +106,23 @@ For server-rendered controllers, read the application-boundary examples in [refe
 
 ### Form Submission Validation
 
-For server-rendered form submission routes, perform request-body conversion and transport-level form validation in a route-specific PSR-15 middleware named `<FormName>ValidationMiddleware`.
+Default forms to JavaScript-managed submissions, including forms initially rendered by the server. The browser submits without navigating away, preserves inputs on failure, and displays RFC 9457 Problem Details. Use `php-request-validation` for hydration, Symfony constraints, error mapping, and browser feedback.
 
-- Convert the parsed request body into a typed `<FormName>Values` object through a factory.
-- Validate those values and attach both `<FormName>Values` and `<FormName>ValidationResult` to the request as class-keyed attributes before delegating to the request handler.
-- Let the controller require those attributes, render validation errors with the appropriate HTTP status, or invoke the application service with validated input.
-- Do not inject form validators or form-values factories into controllers or run form validation directly inside controller actions.
-- Treat missing or wrongly typed validation attributes in the controller as route-wiring errors and report them with `LogicException`.
-- Attach the validation middleware only to the corresponding form-submission route.
-- Keep response rendering and redirects in the controller; validation middleware prepares the request and does not render the form response.
-- Keep domain invariants in the domain or application layer. Middleware owns HTTP request-shape validation and must not become the only enforcement point for rules that apply to every caller.
+- Perform request-body conversion and transport validation in route-specific PSR-15 middleware named `<FormName>ValidationMiddleware`.
+- Convert accepted parsed input into a typed `<FormName>Values` object through the established factory. Keep factories and validators out of controllers.
+- On parsing or validation failure, return Problem Details with `Content-Type: application/problem+json` through the shared error infrastructure without invoking the next handler: malformed syntax is HTTP 400 and contract violations are HTTP 422. Invalid submissions must not reach the controller or application operations.
+- On success, attach the validated `<FormName>Values` object as a class-keyed request attribute and delegate with the returned request.
+- Let the controller require that attribute, translate it into application-owned input, invoke the application service, and produce the established success response. Treat a missing or wrongly typed attribute as a route-wiring error with `LogicException`.
+- Attach the validation middleware only to the corresponding submission route. Keep hydration, validation, and HTTP serialization in the web/infrastructure boundary and keep domain invariants independent of middleware.
 
-Avoid validation inside the controller:
-
-```php
-final class ContactController
-{
-    public function __construct(
-        private ContactFormValuesFactory $valuesFactory,
-        private ContactFormValidator $validator,
-    ) {
-    }
-
-    public function postContact(
-        ServerRequestInterface $request,
-        ResponseInterface $response,
-    ): ResponseInterface {
-        $values = $this->valuesFactory->create((array) $request->getParsedBody());
-        $validationResult = $this->validator->validate($values);
-
-        // Rendering and application flow are now mixed with request validation.
-    }
-}
-```
-
-Put conversion and validation in route middleware:
-
-```php
-final class ContactFormValidationMiddleware implements MiddlewareInterface
-{
-    public function __construct(
-        private ContactFormValuesFactory $valuesFactory,
-        private ContactFormValidator $validator,
-    ) {
-    }
-
-    public function process(
-        ServerRequestInterface $request,
-        RequestHandlerInterface $handler,
-    ): ResponseInterface {
-        $parsedBody = $request->getParsedBody();
-        $requestBody = is_array($parsedBody) ? $parsedBody : [];
-        $values = $this->valuesFactory->create($requestBody);
-        $validationResult = $this->validator->validate($values);
-        $validatedRequest = $request
-            ->withAttribute(ContactFormValues::class, $values)
-            ->withAttribute(ContactFormValidationResult::class, $validationResult);
-
-        return $handler->handle($validatedRequest);
-    }
-}
-```
-
-The controller then owns only the HTTP outcome and application call:
-
-```php
-public function postContact(
-    ServerRequestInterface $request,
-    ResponseInterface $response,
-): ResponseInterface {
-    $values = $request->getAttribute(ContactFormValues::class);
-    $validationResult = $request->getAttribute(ContactFormValidationResult::class);
-
-    if (
-        !$values instanceof ContactFormValues
-        || !$validationResult instanceof ContactFormValidationResult
-    ) {
-        throw new LogicException('The contact route requires form validation.');
-    }
-
-    if ($validationResult->hasErrors()) {
-        return $this->pageRenderer->renderForm(
-            $response->withStatus(422),
-            $values,
-            $validationResult,
-        );
-    }
-
-    $this->contactService->send($validationResult->message());
-
-    return $this->responseFactory->createSuccess();
-}
-```
-
-Register the middleware on the submission route:
+For example, register contact validation explicitly:
 
 ```php
 $app->post('/contact', [ContactController::class, 'postContact'])
     ->add(ContactFormValidationMiddleware::class);
 ```
+
+Only when the project or task explicitly requires an ordinary HTML submission, keep the controller-rendered error flow: middleware attaches both `<FormName>Values` and `<FormName>ValidationResult` as class-keyed attributes on either outcome and delegates. The controller requires those typed attributes, reports missing or wrongly typed attributes with `LogicException`, renders invalid forms with preserved values and the appropriate status, and invokes application operations only after successful validation. Middleware must not render the HTML form itself. Do not add this fallback by default.
 
 ### Slim Route URL Generation
 
@@ -225,7 +143,7 @@ Before finalizing Slim URL-generation changes, search production code and tests 
 
 Treat HTTP request shape as a web adapter concern, not a domain concern.
 
-Validate transport-level input at the web-adapter boundary: required query/path/body parameters, mutually required parameters, syntax, constraints supported by the project's boundary validation mechanism, endpoint-specific unsupported enum values, and HTTP status mapping. For server-rendered form submissions, follow the form-submission middleware convention above. Other HTTP endpoints may validate in the controller or a dedicated boundary validator when that matches the project's established architecture.
+Validate transport-level input at the web-adapter boundary: required query/path/body parameters, mutually required parameters, syntax, constraints supported by the project's boundary validation mechanism, endpoint-specific unsupported enum values, and HTTP status mapping. For form submissions, follow the middleware convention above. Default new or revised HTTP validation flows in PSR-15 applications to route middleware using `php-request-validation`; preserve established validation on unrelated endpoints and use the project's boundary mechanism when PSR-15 is unavailable.
 
 Translate web DTOs, query parameters, and generated API models into application commands or purpose-named method calls before invoking application services. Do not pass nullable parameter combinations into application services to represent different HTTP request modes.
 

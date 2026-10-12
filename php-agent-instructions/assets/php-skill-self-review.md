@@ -12,6 +12,7 @@ After making PHP code, test, or skill changes, review the diff before the final 
 - Use `php-templating` for server-rendered controllers, page templates, partials, localized email bodies, and template-input changes.
 - Use `php-testing-style` for all test naming, mocks, unit/integration boundaries, assertions, layout, and verification scope.
 - Use `php-application-security` for input validation, regex safety, and other application-security-sensitive code paths.
+- Use `php-request-validation` for request DTO hydration, Symfony constraints, validation middleware, Problem Details, and browser submission handling. Default forms to JavaScript-managed submissions that preserve inputs and display server errors; ordinary HTML submission flows require an explicit project or task requirement.
 - Use `php-authentication-security` when adding, changing, or reviewing login, credentials, password policy or hashing, sessions, logout, account recovery or verification, authentication throttling, or MFA.
 - Use `php-rbac-authorization` when adding, changing, or reviewing roles, permissions, authorization attributes, protected routes or controllers, object-scoped access, or RBAC mappings.
 - Use `php-logging-exceptions` and `php-database-migrations` when changes touch those areas.

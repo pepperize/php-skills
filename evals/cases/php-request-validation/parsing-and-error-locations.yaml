@@ -1,0 +1,53 @@
+- description: php-request-validation:parsing-and-error-locations
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-request-validation/SKILL.md
+    additional_skill: file://../php-request-validation/references/problem-details.md
+    project_instructions: |
+      Slim 4 accepts JSON objects at POST /profiles with required email.
+      Symfony Validator checks hydrated DTOs; transport property postalCode
+      comes from JSON postal_code.
+      A validation error can concern addresses[0].postalCode, a top-level key
+      named a/b~c, a key named first name, the whole document, or missing email.
+    task: |
+      Review the pipeline and propose a focused correction with the expected
+      HTTP statuses and public error locations. Include malformed JSON, valid
+      JSON null and scalars, {}, [], {"0":"value"}, nested DTO hydration, and
+      the named field paths. Show a representative Problem Details response,
+      explain its public errors-extension/code/message contract, and identify
+      the real pipeline components the meaningful tests must exercise.
+    code: |
+      $app->addBodyParsingMiddleware();
+
+      // Inside validation middleware:
+      $body = (array) $request->getParsedBody();
+      try {
+          $dto = $factory->create($body);
+          $violations = $validator->validate($dto);
+      } catch (Throwable $exception) {
+          return $responder->json(422, ['detail' => $exception->getMessage()]);
+      }
+
+      foreach ($violations as $violation) {
+          $errors[] = [
+              'pointer' => '#/' . str_replace('.', '/', $violation->getPropertyPath()),
+              'detail' => $violation->getMessage(),
+              'code' => $violation->getCode(),
+          ];
+      }
+  assert:
+    - type: contains
+      value: application/problem+json
+    - type: contains
+      value: '#/addresses/0/postal_code'
+    - type: contains
+      value: '#/a~1b~0c'
+    - type: contains
+      value: '#/first%20name'
+    - type: llm-rubric
+      value: 'Pass only if malformed JSON is explicitly distinguished as 400 from valid JSON null/scalars violating the object contract as 422, recognizing that Slim default parsed-body null is ambiguous and middleware execution order matters. Preserve the original JSON object/array distinction before associative conversion: {} and {"0":"value"} are objects with missing email rather than wrong-shaped lists, while [] is an array. Fail if array_is_list alone is used to recover JSON shape after associative decoding. The correction must reject blind cast-to-array and broad Throwable-to-422 handling, hydrate nested objects before cascading Symfony validation, map submitted field names and indexes to the asserted pointers, and explain root and missing-field locations. Problem Details errors are a documented application extension, codes are application-owned rather than raw Symfony codes, and public errors cannot expose exception details. Tests must exercise the real parser and attribute metadata as well as pointer mapping and middleware short-circuiting.'
+  metadata:
+    id: php-request-validation:parsing-and-error-locations
+    skill: php-request-validation
+    kind: review

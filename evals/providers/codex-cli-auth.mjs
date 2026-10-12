@@ -364,12 +364,14 @@ function toPromptfooTokenUsage(usage) {
     return undefined;
   }
 
-  const prompt = (usage.input_tokens || 0) + (usage.cached_input_tokens || 0);
+  // Cached input is already included in input_tokens.
+  const prompt = usage.input_tokens || 0;
   const completion = usage.output_tokens || 0;
 
   return {
     prompt,
     completion,
+    cached: usage.cached_input_tokens || 0,
     total: prompt + completion,
   };
 }

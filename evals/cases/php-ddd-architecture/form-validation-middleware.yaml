@@ -8,9 +8,13 @@
       App/Frontend and the application uses Slim with PSR-15 middleware.
     task: |
       Refactor this server-rendered contact-form submission so form values are
-      created and validated in the project's preferred boundary. Show the
-      resulting middleware, controller action, and route registration. Invalid
-      forms must be rendered with status 422; valid forms call ContactService.
+      created and validated in the project's preferred boundary. The page is
+      initially server-rendered and no submission mechanism has been selected.
+      Show the resulting middleware, controller action, route registration,
+      and explain how failed submissions retain entered values. Invalid forms
+      return status 422; valid forms call ContactService. Reuse the application's
+      ProblemDetailsResponseFactory for error responses. ContactFormValues has
+      a string message property and ContactService::send accepts that string.
     code: |
       final class ContactController
       {
@@ -53,6 +57,38 @@
     - type: contains
       value: withAttribute(ContactFormValues::class
     - type: contains
+      value: getAttribute(ContactFormValues::class
+    - type: contains
+      value: LogicException
+    - type: contains
+      value: application/problem+json
+    - type: regex
+      value: 'add\s*\(\s*ContactFormValidationMiddleware::class\s*\)'
+    - type: llm-rubric
+      value: 'Pass only if conversion and ContactFormValidator invocation move into route-specific PSR-15 middleware, validation failures return 422 application/problem+json without calling the next handler, success attaches typed ContactFormValues and delegates, and the route registers that middleware. The controller must require the typed values, treat absence or the wrong type as a LogicException wiring error, and call ContactService only after successful validation. The default submission must use JavaScript without navigation so entered values remain in the form and Problem Details can be displayed. Fail if server-rendered initial HTML is assumed to require controller-rendered submission errors, a non-JavaScript fallback is added as a requirement, validation remains in the controller, or domain invariants depend only on middleware.'
+  metadata:
+    id: php-ddd-architecture:form-validation-middleware
+    skill: php-ddd-architecture
+    kind: apply
+
+- description: php-ddd-architecture:explicit-html-form-validation
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-ddd-architecture/SKILL.md
+    project_instructions: |
+      This project uses Domain-Driven Design and Slim with PSR-15 middleware.
+      Contact submissions must work as ordinary HTML posts without JavaScript.
+    task: |
+      Show the boundary flow for a contact submission. Use ContactFormValues,
+      ContactFormValidationResult, and ContactFormValidationMiddleware. Invalid
+      forms must be rendered with status 422 and entered values preserved.
+      Valid forms invoke ContactService. Show request attributes, controller
+      handling, and middleware registration; keep validation out of the action.
+  assert:
+    - type: contains
+      value: withAttribute(ContactFormValues::class
+    - type: contains
       value: withAttribute(ContactFormValidationResult::class
     - type: contains
       value: getAttribute(ContactFormValues::class
@@ -60,13 +96,11 @@
       value: getAttribute(ContactFormValidationResult::class
     - type: contains
       value: LogicException
-    - type: contains
-      value: withStatus(422)
     - type: regex
       value: 'add\s*\(\s*ContactFormValidationMiddleware::class\s*\)'
     - type: llm-rubric
-      value: 'Pass only if request-body conversion and ContactFormValidator invocation move into a route-specific PSR-15 middleware, the middleware attaches typed ContactFormValues and ContactFormValidationResult request attributes and delegates, and the submission route registers that middleware. The controller must no longer depend on ContactFormValuesFactory or ContactFormValidator; it must require the typed attributes, treat their absence as a LogicException wiring error, render invalid forms with status 422, and call ContactService only after successful validation. Fail if middleware renders the form response, validation remains in the controller, or domain-wide invariants are described as middleware-only rules.'
+      value: 'Pass only if the explicit ordinary HTML requirement takes precedence over the JavaScript default. Middleware converts and validates, attaches typed values and validation-result attributes even for invalid submissions, and delegates. The controller requires those attributes, reports missing or wrong types as LogicException wiring errors, renders invalid forms with preserved values and status 422, and invokes ContactService only for valid submissions. Fail if JavaScript or JSON Problem Details is made mandatory for this flow or if middleware renders the HTML form.'
   metadata:
-    id: php-ddd-architecture:form-validation-middleware
+    id: php-ddd-architecture:explicit-html-form-validation
     skill: php-ddd-architecture
     kind: apply

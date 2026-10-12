@@ -68,6 +68,8 @@ $sut->load($locales);
 
 ## Authentication Integration Coverage
 
+Use `php-authentication-security` and the project's documented credential policy as the authority for password acceptance and legacy migration.
+
 When authentication behavior changes, cover the affected end-to-end boundary with realistic storage, middleware, cookies, and a controllable clock where applicable:
 
 - correct password, wrong password, unknown account, unverified account, and disabled account;
@@ -79,8 +81,9 @@ When authentication behavior changes, cover the affected end-to-end boundary wit
 - `Secure`, `HttpOnly`, `SameSite`, `Path`, expiry, and authenticated-response cache headers;
 - verification and reset token syntax, expiry, single use, atomic concurrent consumption, outstanding-token bounds, and purpose separation;
 - sibling reset-token and active-session invalidation after password reset;
-- acceptance of the full supported password length, including Unicode input and input beyond bcrypt's 72-byte boundary when bcrypt is used; and
-- password-hash upgrade after successful verification when algorithm or cost settings change.
+- acceptance and rejection at the documented character and byte boundaries, including multibyte Unicode passwords beyond 72 bytes and passwords differing only after byte 72, using the real new-password hashing implementation to verify that the complete accepted input is significant;
+- existing bcrypt credential compatibility without retroactively applying new registration limits, and the documented change/reset path when the legacy policy allowed input beyond 72 bytes; and
+- password-hash upgrade after successful verification when algorithm or cost settings change, only when the documented legacy-migration policy permits it.
 
 Do not assert that known and unknown account paths take the same number of milliseconds. Assert equal public output and the intended orchestration, such as real-or-dummy hash verification, limiter operations, and queued notification behavior. Use a controllable clock for expiry and backoff boundaries.
 
