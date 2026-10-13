@@ -1,0 +1,53 @@
+- description: php-request-validation:slim-controller-arguments
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-request-validation/SKILL.md
+    additional_skill: file://../php-request-validation/references/slim-controller-arguments.md
+    project_instructions: |
+      PHP 8.2, Slim 4, php-di/php-di 7, php-di/slim-bridge 3, and
+      php-di/invoker 2 are already installed. The composition root calls
+      Bridge::create($container) before registering routes. Existing
+      CreateUserRequestValidationMiddleware hydrates and validates exactly once,
+      returns the existing Problem Details response on invalid input, and
+      attaches CreateUserRequest::class to the request on success. Keep that
+      middleware and unrelated routes. UserController maps the DTO into
+      Registration, then calls RegistrationService. Controllers live under
+      App/Frontend; Slim composition and middleware live in Infrastructure.
+    task: |
+      Change the controller input contract to accept CreateUserRequest directly.
+      Show the focused argument resolver and its PHP-DI/Slim composition. Explain
+      how the route explicitly declares required DTO types, how a conflicting
+      name-keyed attribute is handled, and what happens if the class-keyed
+      attribute is missing, null, or the wrong type even when the container can
+      provide a CreateUserRequest. Explain the real-dispatch verification scope,
+      including two successive requests through the same application.
+    code: |
+      public function postUsers(ServerRequestInterface $request): ResponseInterface
+      {
+          $createUserRequest = $request->getAttribute(CreateUserRequest::class);
+          if (!$createUserRequest instanceof CreateUserRequest) {
+              throw new LogicException('User creation requires request validation.');
+          }
+          $registration = new Registration($createUserRequest->email);
+          $this->registrationService->register($registration);
+
+          return $this->userResponseFactory->createSuccess();
+      }
+  assert:
+    - type: regex
+      value: 'postUsers\s*\(\s*CreateUserRequest\s+\$\w+\s*\)'
+    - type: contains
+      value: ControllerInvoker
+    - type: contains
+      value: TypeHintResolver
+    - type: contains
+      value: TypeHintContainerResolver
+    - type: contains
+      value: LogicException
+    - type: llm-rubric
+      value: 'Pass only if the controller receives CreateUserRequest directly and keeps mapping to Registration without extraction, hydration, or field validation. Invocation configuration explicitly selects required DTO types without suffix/namespace guessing. Reuse the installed ControllerInvoker and TypeHintResolver with a focused guard that runs before name-based and container resolution; a class-keyed object takes precedence, and missing/null/wrong-type class-keyed attributes raise LogicException before the action runs even when a name-keyed object or container entry exists. Never register submitted DTOs in the shared container or map wiring/programming errors to 422. Keep hydration, validation, middleware ordering, and unrelated routes intact. Verify real Slim dispatch, parameter renaming, name collisions, missing/wrong attributes, invalid-input short-circuiting, distinct DTOs on successive requests, and preserved request/response, route-argument and service injection. Fail for vendor edits, framework replacement, a new body mapper, or DTO state cached across requests.'
+  metadata:
+    id: php-request-validation:slim-controller-arguments
+    skill: php-request-validation
+    kind: apply

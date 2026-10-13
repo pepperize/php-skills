@@ -25,11 +25,11 @@ Start with the framework's simplest suitable option, and justify additional feat
 
 ## Browser Form Submissions
 
-Default forms to JavaScript-managed submissions using `fetch` or the project's established lightweight mechanism. Follow `php-request-validation` for the request contract and Problem Details handling.
+Default forms to JavaScript-managed submissions using `fetch` or the project's established lightweight mechanism. The browser validates locally before submission and owns displayed feedback and its localization. Follow `php-request-validation` for the request contract and Problem Details handling.
 
-- Prefer native HTML validation attributes and appropriate input types; add custom client validation only where needed.
+- Prefer native HTML validation attributes and appropriate input types; use their constraint state for frontend-owned messages and add custom client validation only where needed.
 - Preserve entered values while submitting and on validation or network failures. Reset or navigate only after confirmed success.
-- Display Problem Details field errors and an accessible form-level summary without inserting server messages as HTML. Keep unmatched errors visible and clear stale feedback when corrected or resubmitted.
+- Interpret actionable Problem Details types or codes and relevant field locations to select frontend-owned messages. Use an accessible summary with frontend-owned generic text for unknown or unmatched failures. Never display server `title`, `detail`, or validator messages, even as plain text or fallback copy. Clear stale feedback when corrected or resubmitted.
 - Keep browser feedback separate from authoritative server validation and preserve existing CSRF protection.
 - Use controller-rendered errors for ordinary HTML submissions only when the project or task explicitly requires that flow. Do not introduce a frontend framework or a non-JavaScript fallback without a concrete requirement.
 

@@ -7,7 +7,7 @@ description: Applies company PHP application security guidance. Use when adding,
 
 ## Request Validation
 
-Treat external input as untrusted even when browser validation succeeds. Validate it only at the input boundary. For typical PHP HTTP applications, use Symfony Validator attributes on input DTOs, executed by route middleware before controllers and services. Use `php-request-validation` for hydration, constraints, middleware, and Problem Details.
+Treat external input as untrusted even when browser validation succeeds. Within the backend, validate it only at the input boundary; independent browser validation is appropriate for usability and never authorizes a request. For typical PHP HTTP applications, use Symfony Validator attributes on input DTOs, executed by route middleware before controllers and services. Use `php-request-validation` for hydration, constraints, middleware, and Problem Details.
 
 Do not repeat input checks in services, application commands, domain objects, repositories, or output code, or introduce a domain policy merely to recheck email syntax, password composition, lengths, or allowed input values. Other external entry points validate their own input before calling application services. Business decisions about current state, permissions, ownership, uniqueness, and lifecycle transitions remain with the operation that owns them.
 

@@ -9,18 +9,54 @@
       POST /signup accepts email as a JSON string and age as a JSON integer.
       On success it returns HTTP 201 JSON with an application-owned redirect.
       Invalid requests return HTTP 422 application/problem+json with errors
-      containing pointer, detail, and code. Do not add frontend dependencies.
+      containing pointer and code; diagnostic detail may be absent or in a
+      different language from the UI. The UI supports German and English and
+      owns its messages. Do not add frontend dependencies.
     task: |
       Recommend and sketch the default submission and error-display flow for
       this form. Cover native browser validation, the JSON age type, a 422
       response, an unmapped field error, network failure, and success. Explain
       where entered values remain and when navigation or reset is appropriate.
+      Show how invalid input prevents a request, how the UI chooses localized
+      messages, and why changing server diagnostic wording cannot change them.
   assert:
     - type: contains
       value: fetch(
     - type: llm-rubric
-      value: 'Pass only if JavaScript submits without navigating away, preserves native HTML validation, sends age in the required JSON type without disguising invalid input, preserves CSRF protection, checks HTTP failure responses explicitly, and uses Problem Details for safe field feedback plus an accessible summary that retains unmapped errors. Inputs must remain unchanged after 422 or network failure, and navigation or reset must happen only after confirmed success. Fail if response 422 is treated as a fetch network rejection, server messages are inserted as HTML, JavaScript-managed submissions are treated as optional rather than the default, ordinary HTML fallback is imposed, a validation framework is added, or browser checks replace server validation.'
+      value: 'Pass only if JavaScript submits without navigating away, validates locally using native constraints before sending, chooses frontend-owned localized messages, sends age in the required JSON type without disguising invalid input, preserves CSRF protection, and checks HTTP failure responses explicitly. Actionable Problem Details types or codes and locations must select frontend-owned feedback; unknown or unmapped failures get an accessible summary with frontend-owned generic text. Missing or changed diagnostic detail must not affect displayed messages or locale. Inputs must remain unchanged after 422 or network failure, and navigation or reset must happen only after confirmed success. Fail if server title, detail, or validator messages are displayed as text or HTML, parsed for behavior, or used as fallback UI copy; if locally invalid input sends a request; if 422 is treated as a fetch network rejection; if ordinary HTML fallback or a validation framework is imposed; or if browser checks replace independent server validation.'
   metadata:
     id: php-request-validation:browser-submissions
+    skill: php-request-validation
+    kind: apply
+
+- description: php-request-validation:frontend-message-ownership
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-request-validation/SKILL.md
+    project_instructions: |
+      A signup form supports German and English and has email and password
+      inputs with required attributes. Its request DTO already validates email
+      syntax and passwords of 10-128 characters with uppercase and lowercase
+      letters, a digit, and a special character. A canonical pattern compatible
+      with backend regex and HTML5 pattern is already available. The API accepts
+      JSON and returns 422 Problem Details with application-owned codes such as
+      INVALID_PASSWORD and STALE_TERMS_VERSION and submitted field pointers.
+      Server title and detail are optional diagnostics whose language is not
+      the selected UI language. Existing CSRF protection must remain in place.
+    task: |
+      The current browser calls reportValidity(), submits the request, and
+      assigns error.detail directly to displayed field errors. Correct that
+      flow without changing the API or adding dependencies. Cover local email
+      and password validation, frontend-owned localized messages, a changed
+      terms version that only the server can decide, and an unknown code or
+      unmapped pointer. Explain focused verification: changing or omitting
+      server diagnostic text must not affect UI wording or locale, and invalid
+      requests that bypass browser checks must still be rejected by the server.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if email and password constraints run locally before sending, native attributes use the available canonical pattern rather than an independently authored format validator, local invalid input prevents the request, and displayed messages and translations belong to the frontend. Known server outcomes use stable types or codes with frontend-owned feedback, changed terms trigger appropriate review without discarding inputs, and unknown or unmapped failures produce a frontend-owned accessible generic summary. Verification must cover diagnostic text changes or absence without changing visible wording or locale, local invalid input without a request, and server rejection when client checks are bypassed. Fail if any server title, detail, or validator message becomes displayed text, fallback copy, or a behavior selector; if server translations are added for browser errors; if API changes, a generic error registry, or a new dependency is introduced; or if browser checks replace server validation.'
+  metadata:
+    id: php-request-validation:frontend-message-ownership
     skill: php-request-validation
     kind: apply

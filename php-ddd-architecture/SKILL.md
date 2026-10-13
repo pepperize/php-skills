@@ -106,13 +106,13 @@ For server-rendered controllers, read the application-boundary examples in [refe
 
 ### Form Submission Validation
 
-Default forms to JavaScript-managed submissions, including forms initially rendered by the server. The browser submits without navigating away, preserves inputs on failure, and displays RFC 9457 Problem Details. Use `php-request-validation` for hydration, Symfony constraints, error mapping, and browser feedback.
+Default forms to JavaScript-managed submissions, including forms initially rendered by the server. The browser validates locally before submission, submits without navigating away, preserves inputs on failure, and owns displayed messages and their localization. Interpret actionable RFC 9457 Problem Details types or codes with frontend-owned feedback; never display server diagnostic text. Use `php-request-validation` for hydration, Symfony constraints, typed controller argument delivery, error mapping, and browser feedback.
 
 - Perform request-body conversion and input validation in route-specific PSR-15 middleware, with Symfony Validator attributes on the input DTO. Name REST middleware after the request DTO, such as `CreateUserRequestValidationMiddleware`; use `<FormName>ValidationMiddleware` for traditional form endpoints.
 - Convert accepted parsed input into the typed REST request DTO, such as `CreateUserRequest`, through the established factory. Reserve `<FormName>Values` for traditional form data. This distinction still applies when a browser form submits to the REST API. Keep factories and validators out of controllers.
 - On parsing or validation failure, return Problem Details with `Content-Type: application/problem+json` through the shared error infrastructure without invoking the next handler: malformed syntax is HTTP 400 and contract violations are HTTP 422. Invalid submissions must not reach the controller or application operations.
 - On success, attach the validated request DTO as a class-keyed request attribute and delegate with the returned request.
-- Let the controller require that attribute, translate it into application-owned input, invoke the application service, and produce the established success response. Treat a missing or wrongly typed attribute as a route-wiring error with `LogicException`.
+- In Slim projects, prefer a controller parameter containing the validated DTO, resolved by declared type from its class-keyed attribute using `php-request-validation` and its Slim controller-arguments reference. Keep invocation strategies, parameter resolvers, and their composition in infrastructure. Missing or wrongly typed required DTOs must raise `LogicException` at the invocation boundary before container fallback. The controller translates the DTO into application-owned input, invokes the application service, and produces the established success response; it keeps `ServerRequestInterface` only when other request data is needed.
 - Attach the validation middleware only to the corresponding submission route. Keep hydration, field validation, and HTTP serialization in the web/infrastructure input boundary. Services and domain objects consume validated input without repeating field checks; state-dependent business rules remain in their owning operations.
 
 For example, register contact validation explicitly:
@@ -122,7 +122,7 @@ $app->post('/contact', [ContactController::class, 'postContact'])
     ->add(ContactFormValidationMiddleware::class);
 ```
 
-Only when the project or task explicitly requires an ordinary HTML submission, keep the controller-rendered error flow: middleware attaches both `<FormName>Values` and `<FormName>ValidationResult` as class-keyed attributes on either outcome and delegates. The controller requires those typed attributes, reports missing or wrongly typed attributes with `LogicException`, renders invalid forms with preserved values and the appropriate status, and invokes application operations only after successful validation. Middleware must not render the HTML form itself. Do not add this fallback by default.
+Only when the project or task explicitly requires an ordinary HTML submission, keep the controller-rendered error flow: middleware attaches both `<FormName>Values` and `<FormName>ValidationResult` as class-keyed attributes on either outcome and delegates. In Slim, prefer delivering both as typed controller parameters through the same invocation boundary, which reports missing or wrongly typed required attributes with `LogicException`. The controller renders invalid forms with preserved values and the appropriate status, and invokes application operations only after successful validation. Middleware must not render the HTML form itself. Do not add this fallback by default.
 
 ### Slim Route URL Generation
 

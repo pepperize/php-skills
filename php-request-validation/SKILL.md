@@ -1,6 +1,6 @@
 ---
 name: php-request-validation
-description: Applies PHP HTTP request-validation conventions for DTO hydration, Symfony Validator attributes, PSR-15 middleware, RFC 9457 Problem Details, and JavaScript-managed form submissions. Use when adding, changing, or reviewing those boundaries and submission flows.
+description: Applies PHP HTTP request-validation conventions for DTO hydration, Symfony Validator attributes, PSR-15 middleware, typed controller argument resolution in Slim, RFC 9457 Problem Details, and JavaScript-managed form submissions. Use when adding, changing, or reviewing those input boundaries, controller DTO bindings, and submission flows.
 ---
 
 # PHP Request Validation
@@ -11,9 +11,9 @@ Apply these defaults to the requested validation work. Inspect the PHP version, 
 
 - Prefer Symfony Validator with PHP attributes when selecting a validation library.
 - In typical PHP HTTP applications, declare input constraints as Symfony Validator attributes on the input DTO and execute them in explicitly registered route middleware before the controller or service runs. In Slim or another PSR-15 application, use PSR-15 middleware; otherwise use the framework's input-layer equivalent.
-- Default browser forms to JavaScript-managed submissions: submit without navigating away, preserve the inputs, and display server errors from Problem Details.
+- Default browser forms to JavaScript-managed submissions: validate locally before submission, submit without navigating away, preserve the inputs, and display frontend-owned messages with frontend-owned localization.
 - Support ordinary HTML submissions with controller-rendered errors only when the project or task explicitly requires that flow. Do not add a fallback as an unsolicited requirement.
-- Validate external input only in the input layer. Controllers consume validated DTOs; services, application commands, domain objects, repositories, and output renderers must not repeat field validation or add a second validation pass.
+- Within the backend, validate external input only in the input layer. Controllers consume validated DTOs; services, application commands, domain objects, repositories, and output renderers must not repeat field validation or add a second validation pass. This restriction does not prohibit independent browser validation.
 - Required values, types, nullability, lengths, formats, character composition, allowed values, and cross-field input constraints belong to that input layer. Calling an email or password format rule a domain invariant does not justify validating it again in a service.
 - CLI commands, imports, jobs, and external-system adapters validate their external input at their own entry boundary before invoking the same services. Do not add service checks for hypothetical callers.
 - Business decisions requiring current application state, such as permissions, ownership, uniqueness, or allowed lifecycle transitions, remain in their owning application/domain operation. They are not a second pass over input syntax.
@@ -58,32 +58,39 @@ Apply these defaults to the requested validation work. Inspect the PHP version, 
 - Preserve JSON object-versus-array shape before associative conversion, including nested input. Associative decoding turns both `{}` and `[]` into `[]`, and an object with numeric keys can look like a PHP list. Do not use `array_is_list()` alone to infer the original JSON shape; retain decoded objects or explicit shape metadata until the contract checks that distinction.
 - Reject contract violations with HTTP 422 Problem Details without calling the next handler. The controller and business operations must not run on that branch.
 - On success, attach the validated DTO as a class-keyed PSR-7 request attribute and pass the returned request to the next handler.
-- Controllers consume the typed attribute and invoke application code; they do not hydrate or manually validate the submission. A missing or wrongly typed required attribute is a route-wiring error, reported with `LogicException`.
+- Controllers consume validated DTOs and invoke application code; they do not hydrate or manually validate the submission. In Slim projects, prefer typed controller parameters resolved by declared type from class-keyed request attributes. Keep `ServerRequestInterface` when the action needs other request data. Report missing or wrongly typed required DTOs as `LogicException` at the invocation boundary, before name-based resolution or container autowiring can supply an alternative value. Other frameworks use their established input-layer equivalent.
 - Keep authentication, authorization, and existing CSRF protection in their established middleware. Changing submissions to JSON does not remove those protections.
 
 For an explicitly required ordinary HTML submission, middleware may attach values and a validation result on either outcome so the controller can render errors with preserved values. The controller must call application operations only on success. This exception does not apply to the default JavaScript-managed flow.
+
+## Slim Controller Arguments
+
+When implementing or changing request DTO delivery to Slim controller parameters, read [references/slim-controller-arguments.md](references/slim-controller-arguments.md). Select required DTO types explicitly, reuse the installed invocation infrastructure, and keep submitted DTOs out of the shared DI container. Apply the convention to affected routes without migrating unrelated endpoints or installing another framework solely for argument binding.
 
 ## Problem Details
 
 For parsing and contract failures, read [references/problem-details.md](references/problem-details.md) for the response contract, status mapping, and error-location rules.
 
-Centralize serialization through the existing error infrastructure or one focused response collaborator. Return safe public messages and application-owned codes, with `application/problem+json`; do not expose submitted secrets, framework exception text, or stack traces.
+Centralize serialization through the existing error infrastructure or one focused response collaborator. Return application-owned codes with `application/problem+json`. Keep any diagnostic text safe; do not expose submitted secrets, framework exception text, or stack traces. Diagnostic text is for API consumers and must not supply browser UI copy. Do not add backend translations of API diagnostics solely to provide browser validation messages.
 
 ## Browser Forms
 
-- Prefer native HTML validation attributes and appropriate input types. Use JavaScript for submission and feedback, adding custom client validation only where necessary.
+- Validate locally before sending the request. Prefer native HTML validation attributes and appropriate input types; use their constraint state to select frontend-owned messages and localization. Add custom client validation only for rules native constraints cannot express. Routine field errors must not require a server round trip.
 - For regex-based field rules, use the shared pattern body as HTML5 `pattern` rather than adding a separate JavaScript validator. Keep `required`, length attributes, and native input types consistent with the DTO contract; explain any concrete difference in Unicode length counting.
 - Submit with `fetch` or the project's existing lightweight mechanism. JSON and form data are both possible; choose the endpoint's declared media type and types. No large frontend validation framework is required.
 - Keep entered values on validation, network, and other submission failures. Reset or navigate only after confirmed success, according to the success contract.
-- Handle non-success HTTP responses explicitly; `fetch` does not treat HTTP 422 as a network rejection. Map Problem Details locations to known form controls, and show an accessible error summary for unmapped or form-level errors.
-- Render public error text safely, without treating it as HTML. Clear stale feedback when corrected or resubmitted so old errors do not prevent valid submissions.
+- Handle non-success HTTP responses explicitly; `fetch` does not treat HTTP 422 as a network rejection. For actionable server rejections, use stable problem types or application codes and documented locations to select frontend-owned feedback. Map relevant locations to known form controls; show an accessible summary with a frontend-owned generic message for unknown, unmapped, or form-level failures.
+- Never display response `title`, `detail`, per-error diagnostic text, or raw validator messages in the browser. Do not parse them to decide behavior or use them as fallback UI copy. Render frontend-owned messages safely as text and clear stale feedback when corrected or resubmitted.
+- Keep messages and their translations in the existing frontend presentation or localization mechanism. Rules that need server state, such as conflicts or changed legal-document versions, still return server outcomes; the frontend owns the displayed explanation and recovery guidance.
 - Browser checks are usability aids. Always validate on the server; server-backed checks remain appropriate for rules that the browser cannot decide.
 
 ## Verification
 
 Follow `php-testing-style` and test the affected boundaries. Use focused tests for hydration, constraints, error mapping, and serialization, supplemented by pipeline integration tests using the real parser and validator metadata.
 
-Cover applicable valid input, missing/null/type failures, malformed JSON versus valid wrong-shaped JSON, nested and collection constraints, multiple errors, correct pointers and content type, middleware short-circuiting, and delivery of the typed DTO. For changed browser submissions, verify that a 422 response preserves inputs and renders errors, and that failed requests do not trigger the success flow.
+Cover applicable valid input, missing/null/type failures, malformed JSON versus valid wrong-shaped JSON, nested and collection constraints, multiple errors, correct pointers and content type, middleware short-circuiting, and delivery of the typed DTO. For changed browser submissions, verify that locally invalid input prevents the request and shows frontend-owned localized feedback. Verify that a 422 response preserves inputs and selects frontend-owned feedback from stable types or codes, unknown or unmapped failures receive a local generic summary, and failed requests do not trigger the success flow. Changing or omitting server diagnostic text must not change displayed messages or their locale. Exercise the server validator independently with invalid requests that bypass browser checks.
+
+For Slim controller argument changes, exercise real routing and dispatch: verify class-keyed DTO delivery despite parameter renaming or a conflicting name-keyed value, `LogicException` for missing or wrongly typed required attributes before the controller runs, middleware short-circuiting, and distinct DTOs on successive requests through the same application. Verify existing request/response, route-argument, and service injection at the affected invocation boundary.
 
 For regex changes, exercise the same valid and invalid examples through the real backend validator and browser HTML5 constraint validation, including relevant Unicode, whitespace, length boundaries, and large invalid input. Check raw trailing line breaks on the backend and account for native input sanitization in browser checks. Verify actual pattern sharing or the documented engine limitation, not just similar pattern text.
 

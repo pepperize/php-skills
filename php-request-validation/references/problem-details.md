@@ -31,7 +31,6 @@ Content-Type: application/problem+json
   "errors": [
     {
       "pointer": "#/email",
-      "detail": "Enter a valid email address.",
       "code": "INVALID_EMAIL"
     }
   ]
@@ -42,8 +41,9 @@ Content-Type: application/problem+json
 - If `status` is included, it must match the actual HTTP response status.
 - Use the same envelope for hydration and constraint errors. Report multiple applicable errors consistently without promising exhaustive validation after unsafe hydration.
 - Map Symfony constraint violations to stable application codes where clients need them. Do not expose Symfony class names or raw internal identifiers as the public contract.
-- Use safe, actionable messages. Do not include raw values, passwords, tokens, exception messages, or stack traces merely to explain a validation failure.
-- Do not make clients parse human-readable `detail` strings. Use the documented locations and codes for programmatic behavior.
+- Keep `title` and `detail` safe diagnostic text for API consumers. Per-error `detail` is optional diagnostic text; do not require it or add translations solely for browser feedback. Do not include raw values, passwords, tokens, exception messages, or stack traces merely to explain a validation failure.
+- Use stable problem types, documented locations, and application-owned codes for programmatic behavior. Browser consumers must not display or parse human-readable `title`, `detail`, or per-error diagnostic text, including as a fallback. The frontend owns displayed messages and their localization; the example's diagnostic text is not UI copy.
+- Browser forms validate locally before submission. For actionable server outcomes, select frontend-owned feedback from stable types or codes; unknown or unmapped failures receive a frontend-owned generic summary. Server validation remains mandatory for requests that bypass the browser.
 
 ## Error Locations
 
@@ -53,7 +53,7 @@ Content-Type: application/problem+json
 - The example uses URI-fragment pointers. Prefix with `#` and apply RFC 6901 section 6 UTF-8 percent encoding for characters not allowed in URI fragments. For example, a field named `a/b~c` maps to `#/a~1b~0c`; a field named `first name` maps to `#/first%20name`.
 - Use `#` for the submitted document itself. Define missing-field pointers as the intended field location, since the absent member cannot resolve in the submitted document. For cross-field violations, choose the relevant field or the document location consistently.
 - A body pointer cannot locate a query parameter, route parameter, or header. If those inputs need field-level reporting, document separate location metadata rather than inventing a body pointer.
-- Browser consumers must decode fragment and reference-token escaping when matching errors to known controls. Keep unmatched errors visible in a form-level summary.
+- Browser consumers must decode fragment and reference-token escaping when matching actionable errors to known controls. Report unmatched failures in a form-level summary using frontend-owned generic text, without displaying server diagnostic text.
 
 Test nested collections, renamed fields, `~` and `/` tokens, URI-fragment escaping, root and missing-field locations, and multiple violations where relevant to the mapper.
 
