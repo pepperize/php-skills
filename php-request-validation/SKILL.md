@@ -10,10 +10,14 @@ description: Applies PHP HTTP request-validation conventions for DTO hydration, 
 Apply these defaults to the requested validation work. Inspect the PHP version, framework, dependency injection, body parsers, DTOs, error handlers, and form submission flow first. Reuse established infrastructure and do not migrate unrelated endpoints or replace an existing validation library solely to apply this skill.
 
 - Prefer Symfony Validator with PHP attributes when selecting a validation library.
-- In Slim or another PSR-15 application, validate through explicitly registered route middleware before the controller executes business operations.
+- In typical PHP HTTP applications, declare input constraints as Symfony Validator attributes on the input DTO and execute them in explicitly registered route middleware before the controller or service runs. In Slim or another PSR-15 application, use PSR-15 middleware; otherwise use the framework's input-layer equivalent.
 - Default browser forms to JavaScript-managed submissions: submit without navigating away, preserve the inputs, and display server errors from Problem Details.
 - Support ordinary HTML submissions with controller-rendered errors only when the project or task explicitly requires that flow. Do not add a fallback as an unsolicited requirement.
-- Keep HTTP input validation at the web boundary. Domain and application invariants must hold independently for CLI, background jobs, and other callers.
+- Validate external input only in the input layer. Controllers consume validated DTOs; services, application commands, domain objects, repositories, and output renderers must not repeat field validation or add a second validation pass.
+- Required values, types, nullability, lengths, formats, character composition, allowed values, and cross-field input constraints belong to that input layer. Calling an email or password format rule a domain invariant does not justify validating it again in a service.
+- CLI commands, imports, jobs, and external-system adapters validate their external input at their own entry boundary before invoking the same services. Do not add service checks for hypothetical callers.
+- Business decisions requiring current application state, such as permissions, ownership, uniqueness, or allowed lifecycle transitions, remain in their owning application/domain operation. They are not a second pass over input syntax.
+- Validate at input and escape or encode at the actual output context. Never pre-escape DTO or stored values, and never use successful validation as a reason to omit output escaping.
 
 ## Request DTOs And Hydration
 
@@ -22,7 +26,8 @@ Apply these defaults to the requested validation work. Inspect the PHP version, 
 - Check raw types before constructing a strictly typed DTO. Do not rely on PHP scalar coercion or casts to turn invalid input into valid input.
 - Normalize only as the contract allows. HTML form fields usually arrive as strings; a JSON endpoint can require native JSON types. The browser's JSON conversion must follow the same contract.
 - Hydrate nested DTOs and collection elements explicitly before cascading validation. Preserve source field names and collection indexes for error locations.
-- Use purpose-named immutable request DTOs, reusing existing names such as `<FormName>Values` where established. Constructor promotion needs PHP 8.0, readonly properties need PHP 8.1, and readonly classes need PHP 8.2.
+- Use purpose-named immutable request DTOs. For REST APIs, follow `php-readable-code`: use operation/resource names such as `CreateUserRequest` for `POST /api/users` and prefer separate request and response DTOs. A browser form submitting to a REST API follows the same naming. Reserve `<FormName>Values` for traditional form endpoints; an existing form-style DTO name does not override a requested REST naming refactor.
+- Constructor promotion needs PHP 8.0, readonly properties need PHP 8.1, and readonly classes need PHP 8.2.
 - Handle expected missing-field, type, and hydration failures as contract violations. Do not catch every `Throwable` or classify unrelated `TypeError`, configuration failures, and programming errors as client mistakes.
 - Keep hydration, constraint validation, and HTTP serialization as distinct responsibilities. Separate classes only when they improve the existing composition; do not build a generic reflection mapper or registry without a concrete need.
 
@@ -35,6 +40,15 @@ Apply these defaults to the requested validation work. Inspect the PHP version, 
 - Use `#[Assert\Valid]` for nested DTOs and object collections after hydration. Cascading constraints do not create nested objects or establish collection element types.
 - Keep HTTP-specific constraints and Symfony violation objects out of domain models and application commands. Translate validated web input into application-owned input at the boundary.
 - Apply `php-application-security` to external-input and regex safety.
+
+## One Regex Per Field
+
+- When a field needs regex validation, use one full-value regex in one `Assert\Regex` attribute. Combine the field's character requirements into that expression; do not stack separate regex constraints for uppercase, lowercase, digits, symbols, or forbidden characters, or repeat those checks with `preg_match()` elsewhere.
+- Keep built-in constraints for presence, length bounds, native email syntax, and other rules they already express. One regex per field does not mean replacing every constraint with regex. Apply a bounded length constraint before a potentially expensive regex.
+- Prefer one canonical regex body shared by the backend attribute and the frontend HTML5 `pattern` attribute. Own the pattern in the input contract, not a domain policy. Render it or export it through the existing frontend build/configuration mechanism; do not maintain independently authored PHP and JavaScript copies or create a generic pattern registry.
+- Adapt only engine syntax: PHP needs delimiters, appropriate flags, and explicit whole-value anchoring; HTML `pattern` takes the undelimited body, matches the whole value, and uses JavaScript's `v` flag. Use syntax supported by both engines and do not assume PCRE and JavaScript accept every expression identically. See the [HTML pattern specification](https://html.spec.whatwg.org/multipage/input.html#attr-input-pattern).
+- If an actual engine or input-type limitation prevents sharing, document the concrete reason and keep one regex per field in each supported engine with the same accepted/rejected behavior. Do not silently weaken either contract. If no safe regex expresses the format, use a built-in constraint or one deterministic validator in the input layer instead of several regexes.
+- Use a field-level message that describes the combined requirement. Distinct messages for individual character requirements do not justify multiple regex constraints.
 
 ## PSR-15 Middleware
 
@@ -58,6 +72,7 @@ Centralize serialization through the existing error infrastructure or one focuse
 ## Browser Forms
 
 - Prefer native HTML validation attributes and appropriate input types. Use JavaScript for submission and feedback, adding custom client validation only where necessary.
+- For regex-based field rules, use the shared pattern body as HTML5 `pattern` rather than adding a separate JavaScript validator. Keep `required`, length attributes, and native input types consistent with the DTO contract; explain any concrete difference in Unicode length counting.
 - Submit with `fetch` or the project's existing lightweight mechanism. JSON and form data are both possible; choose the endpoint's declared media type and types. No large frontend validation framework is required.
 - Keep entered values on validation, network, and other submission failures. Reset or navigate only after confirmed success, according to the success contract.
 - Handle non-success HTTP responses explicitly; `fetch` does not treat HTTP 422 as a network rejection. Map Problem Details locations to known form controls, and show an accessible error summary for unmapped or form-level errors.
@@ -70,4 +85,6 @@ Follow `php-testing-style` and test the affected boundaries. Use focused tests f
 
 Cover applicable valid input, missing/null/type failures, malformed JSON versus valid wrong-shaped JSON, nested and collection constraints, multiple errors, correct pointers and content type, middleware short-circuiting, and delivery of the typed DTO. For changed browser submissions, verify that a 422 response preserves inputs and renders errors, and that failed requests do not trigger the success flow.
 
-Reuse existing domain-invariant coverage unless the invariant or its integration changed. Run relevant tests, static analysis, and coding-standard checks available in the application, and report any deliberate departures from these defaults.
+For regex changes, exercise the same valid and invalid examples through the real backend validator and browser HTML5 constraint validation, including relevant Unicode, whitespace, length boundaries, and large invalid input. Check raw trailing line breaks on the backend and account for native input sanitization in browser checks. Verify actual pattern sharing or the documented engine limitation, not just similar pattern text.
+
+Before finalizing, trace the route to its controller and service: field constraints must run only in the input layer, and invalid input must never invoke business operations. Review changed services, command/value constructors, domain policies, and repositories for repeated format, length, or character checks and remove them within the requested scope. Reuse existing business-state coverage unless its behavior changed. Run relevant tests, static analysis, and coding-standard checks available in the application, and report any deliberate departures from these defaults.

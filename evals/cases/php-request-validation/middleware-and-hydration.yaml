@@ -7,7 +7,7 @@
       The application uses PHP 8.2, Slim 4, and Symfony Validator as a standalone
       component. POST /users accepts JSON objects with required email (string)
       and age (integer, at least 18). Null and unknown fields are rejected.
-      Existing domain services enforce their own invariants. There is no
+      Existing domain services enforce state-dependent business rules. There is no
       attribute-validator configuration or request-validation middleware yet.
     task: |
       Show the smallest coherent request DTO, hydration and validation flow,
@@ -25,7 +25,7 @@
     - type: contains
       value: LogicException
     - type: llm-rubric
-      value: 'Pass only if raw required-field, null, unknown-field, and native JSON type checks happen before constructing the typed DTO, age="18" is rejected rather than cast or coerced, and Symfony attributes check email format and the age minimum with attribute mapping enabled. Middleware must return 422 via the existing Problem Details responder without invoking the next handler on invalid input, attach the validated DTO as a class-keyed attribute on success, and be explicitly registered on the route. The handler consumes the attribute rather than hydrating or validating. Domain invariants remain independently enforced. Fail for a catch-all Throwable/TypeError-to-422 conversion or speculative mapper/registry infrastructure.'
+      value: 'Pass only if raw required-field, null, unknown-field, and native JSON type checks happen before constructing the typed DTO, age="18" is rejected rather than cast or coerced, and Symfony attributes check email format and the age minimum with attribute mapping enabled. Middleware must return 422 via the existing Problem Details responder without invoking the next handler on invalid input, attach the validated DTO as a class-keyed attribute on success, and be explicitly registered on the route. The handler consumes the attribute rather than hydrating or validating. State-dependent business rules stay with their owning operations; input fields must not be validated again in a service or domain policy. Fail for a catch-all Throwable/TypeError-to-422 conversion or speculative mapper/registry infrastructure.'
   metadata:
     id: php-request-validation:middleware-and-hydration
     skill: php-request-validation

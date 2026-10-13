@@ -1,0 +1,85 @@
+- description: php-request-validation:input-validation-ownership
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-request-validation/SKILL.md
+    project_instructions: |
+      PHP 8.2, Slim 4, and Symfony Validator. POST /api/users already has
+      route-specific validation middleware and a CreateUserRequest DTO with
+      email and password constraints. The controller maps accepted input to
+      Registration and calls RegistrationService. This is the only production
+      entry point. A future CLI import is merely a suggestion, not a requirement.
+      The established password policy is 10 to 128 characters with uppercase,
+      lowercase, a digit, and a symbol. Preserve this explicit policy.
+    task: |
+      Refactor the input validation ownership. Show the revised password DTO
+      attributes and the complete RegistrationService. Keep the existing
+      middleware contract and atomic duplicate-email behavior. Explain where
+      an actual future external CLI input would be validated. Do not implement
+      a CLI command, generic validator registry, or new domain policy.
+    code: |
+      final class RegistrationService
+      {
+          public function __construct(
+              private RegistrationPolicy $registrationPolicy,
+              private PasswordHasher $passwordHasher,
+              private UserRepository $userRepository,
+          ) {
+          }
+
+          public function register(Registration $registration): bool
+          {
+              if (!$this->registrationPolicy->isEmailValid($registration->email)) {
+                  throw new InvalidArgumentException('Invalid email.');
+              }
+              if (!$this->registrationPolicy->isPasswordValid($registration->password)) {
+                  throw new InvalidArgumentException('Invalid password.');
+              }
+
+              $passwordHash = $this->passwordHasher->hash($registration->password);
+
+              return $this->userRepository->tryAdd($registration->email, $passwordHash);
+          }
+      }
+  assert:
+    - type: contains
+      value: tryAdd
+    - type: contains
+      value: Regex
+    - type: llm-rubric
+      value: 'Pass only if email and password field checks and the RegistrationPolicy dependency are removed from RegistrationService, the service hashes the accepted password and preserves atomic tryAdd behavior, and the revised DTO uses exactly one full-value regex constraint for the combined password character requirements with separate length/presence constraints allowed. Validation must remain in middleware using DTO attributes; no equivalent checks may move to Registration constructors, UserRepository, domain objects, or PasswordHasher. A future CLI must validate external input at its own entry boundary, not justify retained service checks. Fail for stacked uppercase/lowercase/digit/symbol regexes, a new domain validator, a speculative CLI implementation, or changing the agreed password policy.'
+  metadata:
+    id: php-request-validation:input-validation-ownership
+    skill: php-request-validation
+    kind: apply
+
+- description: php-request-validation:shared-html5-pattern
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-request-validation/SKILL.md
+    project_instructions: |
+      PHP 8.2, Symfony Validator, and server-rendered PHP templates. POST
+      /api/products already runs validation middleware before its controller.
+      CreateProductRequest::sku must contain three ASCII uppercase letters,
+      a hyphen, and four ASCII digits. The control is a required text input.
+      The template receives input-contract metadata from the existing renderer.
+    task: |
+      Show one authoritative SKU pattern used by an attribute on the input DTO
+      and by the HTML5 input pattern attribute. Show the minimal metadata and
+      rendering integration; no endpoint, generator, or registry is needed.
+      Explain backend and browser whole-value matching and output escaping.
+      Give shared accepted and rejected examples, including an otherwise valid
+      SKU with a suffix or trailing line break. Account for browser text-input
+      sanitization rather than claiming that it preserves raw line breaks.
+  assert:
+    - type: contains
+      value: pattern
+    - type: contains
+      value: Regex
+    - type: llm-rubric
+      value: 'Pass only if exactly one canonical SKU regex body is owned by the input contract and reused by both one backend Regex attribute and the HTML5 pattern attribute, rather than independently authored literals. The backend adapter must match the complete value with suitable PCRE delimiters and anchors; the HTML pattern must receive the undelimited body compatible with JavaScript v mode and whole-value matching. Required input remains enforced on both sides, and dynamic HTML attribute output is escaped at rendering without pre-escaping the DTO or stored SKU. Examples must accept ABC-1234 and reject lowercase, bad digit counts, and suffixes. Raw trailing line breaks must be rejected by backend matching while native text-input sanitization is acknowledged for browser checks. Fail for multiple regex constraints, a separate JavaScript format validator, a new generic registry, or revalidation in a service or domain object.'
+  metadata:
+    id: php-request-validation:shared-html5-pattern
+    skill: php-request-validation
+    kind: apply

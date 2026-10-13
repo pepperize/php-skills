@@ -30,6 +30,8 @@ The exact session and adapter classes may follow the application. Preserve the o
 
 ## Password Policy And Storage
 
+Enforce new-password input rules only in the input layer. For typical PHP HTTP applications, put constraints on the registration, password-change, and password-reset DTOs and run them in route middleware using `php-request-validation`. Keep blocklist checks in that input-validation flow as well. Services and hashers receive validated passwords and must not repeat length, format, or composition checks. CLI and other external entry points validate at their own input boundaries. When an explicitly required composition policy needs regex, use one full-value expression, preferably shared with HTML5 `pattern`.
+
 - For new passwords at registration, password change, and password reset, require at least 15 Unicode characters when authentication is password-only.
 - Allow at least 64 Unicode characters and set a documented, bounded upper limit to protect memory and hashing work. Count characters for the user-facing policy; technical byte limits must accommodate every supported character within the advertised character limit.
 - Allow spaces and all printable Unicode characters. Do not impose uppercase, lowercase, digit, symbol, or periodic password-change rules.
@@ -117,7 +119,7 @@ Apply these rules to password-reset and email-verification links:
 - Generate at least 32 random bytes with `random_bytes()` and encode them with a URL-safe alphabet.
 - Store only a cryptographic digest of the token. The URL contains the bearer token; persistence contains the lookup or comparison digest.
 - Give every token a short, explicit expiry and a purpose. A token for one purpose must not satisfy another.
-- Validate token syntax and decoded length before querying persistence.
+- Validate token syntax and decoded length at the input boundary before invoking the service or querying persistence. Token services still check the persisted purpose, expiry, and consumption state atomically; those checks are business state decisions, not repeated input validation.
 - Compare digests with a timing-safe comparison when the storage lookup does not already provide a constant-shape match.
 - Consume a token atomically with the protected state change. Concurrent requests must not both succeed.
 - Replace an earlier outstanding token or enforce a small documented bound per account and purpose.

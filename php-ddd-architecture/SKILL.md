@@ -85,7 +85,7 @@ The use case may apply booking ownership or tenant rules with domain data. It mu
 
 - Namespaces should expose the architectural side when known: end-user-facing code under frontend namespaces, backend/admin code under backend namespaces.
 - Do not put side-specific controllers or services in a neutral application namespace when the side is known.
-- Keep application-layer names aligned with existing route and UI vocabulary instead of inventing synonyms.
+- Keep application-service names aligned with the domain use case. For REST controllers and HTTP DTOs, apply `php-readable-code`: name the controller after the API resource and the request DTO after the operation and resource, such as `UserController` and `CreateUserRequest` for `POST /api/users`. UI or form vocabulary does not override REST naming.
 - Avoid ambiguous `Public...` and `Admin...` class prefixes when namespace boundaries or route vocabulary name the concept more clearly.
 - Controller method names should mechanically mirror the HTTP route: HTTP verb prefix plus resource noun and optional route action.
 - Keep domain verbs in services or use cases rather than controller method names.
@@ -108,12 +108,12 @@ For server-rendered controllers, read the application-boundary examples in [refe
 
 Default forms to JavaScript-managed submissions, including forms initially rendered by the server. The browser submits without navigating away, preserves inputs on failure, and displays RFC 9457 Problem Details. Use `php-request-validation` for hydration, Symfony constraints, error mapping, and browser feedback.
 
-- Perform request-body conversion and transport validation in route-specific PSR-15 middleware named `<FormName>ValidationMiddleware`.
-- Convert accepted parsed input into a typed `<FormName>Values` object through the established factory. Keep factories and validators out of controllers.
+- Perform request-body conversion and input validation in route-specific PSR-15 middleware, with Symfony Validator attributes on the input DTO. Name REST middleware after the request DTO, such as `CreateUserRequestValidationMiddleware`; use `<FormName>ValidationMiddleware` for traditional form endpoints.
+- Convert accepted parsed input into the typed REST request DTO, such as `CreateUserRequest`, through the established factory. Reserve `<FormName>Values` for traditional form data. This distinction still applies when a browser form submits to the REST API. Keep factories and validators out of controllers.
 - On parsing or validation failure, return Problem Details with `Content-Type: application/problem+json` through the shared error infrastructure without invoking the next handler: malformed syntax is HTTP 400 and contract violations are HTTP 422. Invalid submissions must not reach the controller or application operations.
-- On success, attach the validated `<FormName>Values` object as a class-keyed request attribute and delegate with the returned request.
+- On success, attach the validated request DTO as a class-keyed request attribute and delegate with the returned request.
 - Let the controller require that attribute, translate it into application-owned input, invoke the application service, and produce the established success response. Treat a missing or wrongly typed attribute as a route-wiring error with `LogicException`.
-- Attach the validation middleware only to the corresponding submission route. Keep hydration, validation, and HTTP serialization in the web/infrastructure boundary and keep domain invariants independent of middleware.
+- Attach the validation middleware only to the corresponding submission route. Keep hydration, field validation, and HTTP serialization in the web/infrastructure input boundary. Services and domain objects consume validated input without repeating field checks; state-dependent business rules remain in their owning operations.
 
 For example, register contact validation explicitly:
 
@@ -143,10 +143,12 @@ Before finalizing Slim URL-generation changes, search production code and tests 
 
 Treat HTTP request shape as a web adapter concern, not a domain concern.
 
-Validate transport-level input at the web-adapter boundary: required query/path/body parameters, mutually required parameters, syntax, constraints supported by the project's boundary validation mechanism, endpoint-specific unsupported enum values, and HTTP status mapping. For form submissions, follow the middleware convention above. Default new or revised HTTP validation flows in PSR-15 applications to route middleware using `php-request-validation`; preserve established validation on unrelated endpoints and use the project's boundary mechanism when PSR-15 is unavailable.
+Validate external input only at its input boundary: required query/path/body parameters, mutually required parameters, types, lengths, formats, password character composition, allowed input values, and cross-field constraints. In typical PHP HTTP applications, use route middleware with Symfony Validator attributes on the input DTO as described in `php-request-validation`. Preserve established validation on unrelated endpoints and use the framework's equivalent input boundary when PSR-15 is unavailable.
 
 Translate web DTOs, query parameters, and generated API models into application commands or purpose-named method calls before invoking application services. Do not pass nullable parameter combinations into application services to represent different HTTP request modes.
 
-Only promote validation into the domain or application layer when it expresses a domain invariant in the bounded context's language and must hold for every caller, not just for one HTTP endpoint.
+Do not promote or repeat input validation in application services, domain services, entities, value objects, command constructors, or repositories. Calling a field-format rule a domain invariant does not change its input-layer ownership. CLI commands, imports, jobs, and external-system adapters validate at their own entry boundaries; do not add service revalidation for hypothetical callers.
 
-Do not create domain concepts or domain exceptions for malformed HTTP requests unless the same rule is genuinely part of the ubiquitous language.
+Keep state-dependent business decisions, including permissions, ownership, uniqueness, and lifecycle transitions, in the application/domain operation that owns them. Do not create domain concepts or domain exceptions for malformed external input.
+
+For regex-based fields, use one full-value expression in the input contract, preferably shared with frontend HTML5 `pattern`; follow `php-request-validation` for engine adaptation. Keep pattern constants out of domain policies created solely for input validation. Escape or encode at the final output context, not while creating application input.

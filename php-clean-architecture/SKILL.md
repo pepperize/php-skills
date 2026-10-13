@@ -30,11 +30,13 @@ Ports should expose application-needed capabilities, not adapter assembly detail
 
 Use cases should orchestrate business flow and delegate technical concerns to ports or cohesive collaborators.
 
-Use cases should receive already-shaped application input. Keep transport and request-shape validation at the controller or API adapter boundary, such as missing query parameters, mutually required query parameters, path/query/body syntax, constraints supported by the project's established boundary validation mechanism, endpoint-specific unsupported enum values, and mapping those failures to HTTP status codes.
+Use cases should receive already-validated application input. Validate external input only in the input adapter layer. For typical PHP HTTP applications, use route middleware with Symfony Validator attributes on the input DTO as described in `php-request-validation`; controllers consume the validated DTO. Required values, types, lengths, formats, password character composition, allowed values, and cross-field input constraints belong there.
 
 Avoid nullable parameter combinations inside a use case to choose between request modes. Prefer separate use-case methods, a purpose-named command object, or a small controller/API adapter decision.
 
-Keep domain and application invariants in the application layer when they are independent of HTTP transport and must hold for every caller.
+Do not repeat field validation in use cases, services, application command constructors, domain objects, or repositories, or call an input-format rule a domain invariant to justify doing so. CLI, import, job, and external-system adapters validate their external input at their own entry boundaries before invoking use cases.
+
+Keep business decisions requiring current state, including permissions, ownership, uniqueness, and lifecycle transitions, in their owning application/domain operation. For regex-based fields, use one full-value expression in the input contract, preferably shared with HTML5 `pattern`. Escape or encode at the actual output context.
 
 Avoid letting use cases accumulate unrelated creation, conversion, logging, key formatting, or client-specific responsibilities.
 

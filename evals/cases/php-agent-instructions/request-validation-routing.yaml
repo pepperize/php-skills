@@ -16,7 +16,7 @@
     - type: contains
       value: '<!-- php-skills:self-review:end -->'
     - type: llm-rubric
-      value: 'Pass only if the self-review block routes request DTO hydration, Symfony constraints, validation middleware, Problem Details, and browser submission handling to php-request-validation. It must establish JavaScript-managed forms as the default, preserve inputs and display server errors, and require an explicit project or task requirement for ordinary HTML submissions. Fail if the new skill is omitted or every form is required to have a non-JavaScript fallback.'
+      value: 'Pass only if the self-review block routes request DTO hydration, Symfony constraints, validation middleware, Problem Details, and browser submission handling to php-request-validation. It must require input-layer-only validation with DTO attributes executed in middleware, forbid downstream field revalidation, require one full-value regex per field preferably shared with HTML5 pattern, and require escaping or encoding at output. It must establish JavaScript-managed forms as the default, preserve inputs and display server errors, and require an explicit project or task requirement for ordinary HTML submissions. Fail if the skill is omitted, field validation is allowed in services, or every form is required to have a non-JavaScript fallback.'
   metadata:
     id: php-agent-instructions:request-validation-routing
     skill: php-agent-instructions

@@ -4,14 +4,14 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 
 ## Skills
 
-- `php-readable-code`: readable PHP code, focused responsibilities, factory naming, nullable collection handling, and avoiding hard-to-read nested method calls.
+- `php-readable-code`: readable PHP code, focused responsibilities, factory naming, REST API resource/controller naming, separate request and response DTOs, nullable collection handling, and avoiding hard-to-read nested method calls.
 - `php-templating`: typed presentation models, template engine selection, layouts and partials, HTML escaping, interface translation, and complete source-controlled localized page and email content.
 - `php-testing-style`: PHPUnit unit and integration testing conventions, London-style defaults, test layout, naming, and verification scope.
 - `php-solid-review`: pragmatic code, architecture, design, and implementation self-review using SOLID, DRY, KISS, composition, encapsulation, collaboration, and simplicity principles. Findings name only principles that materially apply. Testing guidance stays delegated to `php-testing-style`.
 - `php-agent-instructions`: installs or updates project-level `AGENTS.md`/`CLAUDE.md` instructions for PHP skill self-review.
 - `php-logging-exceptions`: logging and exception placement guidance for domain-relevant failures and technical boundaries.
 - `php-application-security`: application security guidance for external-input validation and regex safety.
-- `php-request-validation`: Symfony Validator attributes, explicit DTO hydration, PSR-15 route middleware, RFC 9457 Problem Details, and JavaScript-managed form submissions that preserve entered values.
+- `php-request-validation`: input-layer-only validation with Symfony Validator attributes on DTOs and route middleware, one full-value regex per field preferably shared with HTML5 `pattern`, explicit hydration, RFC 9457 Problem Details, and JavaScript-managed forms that preserve entered values. Services consume validated input; output is escaped in its actual context.
 - `php-authentication-security`: secure password authentication, login throttling, recovery and verification tokens, session lifecycle, and Mezzio authentication integration.
 - `php-rbac-authorization`: RBAC authorization guidance for method-local permission attributes, centralized role-to-permission mappings, capability checks, and object-scoped access rules.
 - `php-domain-clarification`: clarification workflow before domain-sensitive implementation changes.

@@ -1,6 +1,6 @@
 ---
 name: php-readable-code
-description: Use when writing, refactoring, or reviewing PHP production code around readability, responsibilities, naming, guard clauses, factories, utilities, nullable collections, or test-only production code.
+description: Use when writing, refactoring, or reviewing PHP production code around readability, responsibilities, naming, REST API resource/controller/DTO naming, guard clauses, factories, utilities, nullable collections, or test-only production code.
 ---
 
 # PHP Readable Code
@@ -64,22 +64,40 @@ return new PrivacyPolicyPageViewModel(
 
 ## Validation Placement
 
-At API boundaries, prefer the project's established boundary validation mechanism for request-shape constraints such as nullness, blank strings, size, simple patterns, enum values, nested DTO validation, and other request binding concerns.
+Validate external input only in the input layer. For typical PHP HTTP projects, declare constraints as Symfony attributes on the input DTO and execute them in route middleware using `php-request-validation`. Controllers consume validated input; services, application commands, domain/value-object constructors, repositories, and output code must not repeat field checks.
 
-Do not introduce predicate or specification classes merely to wrap simple boundary validation rules, one-off null/blank/range checks, or controller-specific request syntax.
+Required values, nullness, blank strings, size, syntax, password character composition, allowed input values, nested DTOs, and cross-field input constraints belong there. Do not introduce a policy, predicate, specification, or `Service::validate()` merely to restate those rules or protect hypothetical future callers. CLI, import, job, and external-system inputs are validated at their own entry boundaries.
 
-Consider a named predicate, specification, policy, or validator only when the validation is non-trivial and at least one of these is true:
+Use one full-value regex per field when regex is needed, preferably sharing its canonical body with HTML5 `pattern`. Do not split the field's character requirements across regex attributes or downstream `preg_match()` calls. Keep built-in constraints for the rules they express clearly; follow `php-request-validation` and `php-application-security` for sharing and engine safety.
 
-- The rule must be applied outside the controller/API boundary, such as generated data, persisted data, infrastructure keys, filenames, external-system data, or reused application flows.
-- The rule is not readable or maintainable in the established boundary validation mechanism alone.
-- The rule has a stable domain or technical name that makes the caller clearer.
-- The rule is security-sensitive and benefits from isolated focused tests.
+Use a focused custom input validator only when built-in constraints cannot express the input contract clearly; invoke it from the input layer and keep it side-effect free. Leave HTTP mapping to the boundary's existing responder.
 
-Keep predicate and specification classes side-effect free. They should answer the validation question and leave exception choice, HTTP mapping, logging, and recovery decisions to the caller that owns that boundary.
+Business decisions about permissions, ownership, uniqueness, and lifecycle transitions stay in their owning operation and use explicit guard clauses. Do not classify a stateless field-format check as a business invariant to bypass the input-layer rule. Escape or encode values at their final output context rather than altering validated or stored values.
 
 ## Factories
 
 When a class mainly creates a returned object, prefer the Factory pattern: name the class after the product plus `Factory`, and name the main method `create(...)`.
+
+## REST API Naming
+
+- For new or intentionally redesigned REST endpoints, name resource collections with plural nouns from the domain language. Let the HTTP method express the operation: `POST /api/users` creates a user; `GET /api/users/{userId}` reads a user.
+- Choose the resource actually created or addressed. Do not name a user-creation endpoint after its registration form, controller, or workflow. Use `/api/registrations` only when a registration is itself a domain resource with its own identity and lifecycle.
+- Name REST controllers after the addressed domain resource: `UserController` handles `/api/users`. Controller methods mirror the HTTP verb and route resource, such as `postUsers()` and `getUsers()`. Do not name a REST controller after the registration form or workflow.
+- Name REST request DTOs after the operation and resource with a `Request` suffix: `CreateUserRequest` is the body of `POST /api/users`. Reserve names such as `RegistrationValues` or `UserCreationValues` for traditional form data. A browser form calling a REST API still uses REST request naming.
+- Prefer separate request and response DTOs so accepted input and returned output have independent contracts. Use names such as `CreateUserRequest` and `CreateUserResponse`, or `UserResponse` for a returned user representation. A shared `UserDto` is admissible when the same object deliberately represents both request and response; do not default to sharing it. These HTTP DTOs remain distinct from the domain entity `User`.
+- Application services and frontend methods may retain capability names such as `RegistrationService` and `register()`; that does not justify workflow names for REST controllers or request DTOs.
+- Treat a request to refactor a REST endpoint according to this skill as including corrections to its route, controller, and DTO names. Preserve explicitly required compatibility and unrelated API behavior; do not silently exclude naming corrections just because the old names already exist. Update routes, clients, tests, and contract documentation together. Do not add compatibility aliases without a caller or contract that requires them.
+
+For a registration flow that creates a `User`:
+
+| Good | Bad | Reason |
+| --- | --- | --- |
+| `POST /api/users` | `POST /api/registration` | The collection names the created domain resource rather than the workflow. |
+| `POST /api/users` | `POST /api/registerUser` | The HTTP method expresses the operation rather than an action in the path. |
+| `GET /api/users/{userId}` | `GET /api/user/{userId}` | A member remains addressed under the plural resource collection. |
+| `UserController::postUsers()` | `RegistrationController::postRegistration()` | The controller names the resource and the handler mirrors the HTTP route. |
+| `CreateUserRequest` | `RegistrationValues`, `UserCreationValues` | A REST request body names the operation and resource rather than form values. |
+| Separate `CreateUserRequest` and `CreateUserResponse` | Automatically sharing a `UserDto` | Input and output contracts can evolve independently. |
 
 ## Method Names
 
@@ -134,9 +152,11 @@ Before finalizing PHP code changes:
 
 - For a non-trivial implementation or refactor, also use `php-solid-review` to review the resulting diff against only the engineering principles that materially apply. Fix meaningful findings before finalizing; do not enumerate principles that have no finding.
 - Review every new or renamed injected dependency and use the complete declared short type in lower camel case.
+- Review new or refactored REST endpoints for plural domain resource paths, resource-named controllers, HTTP/route-aligned handler names, and operation/resource-named request DTOs. Prefer separate request and response DTOs; verify any shared DTO is intentional. Do not carry traditional form `Values` naming into a REST API.
 - Review every newly added or renamed method.
 - Classify each as accessor/property, boolean predicate, action/operation, or factory/construction helper.
 - Accessors may use noun names. Predicates should use `is`, `has`, `can`, `should`, or similar.
 - Action, operation, formatting, mapping, and helper methods must use verb phrases.
 - Remove helper methods that only hide one obvious call unless they enforce a real invariant or improve a repeated concept.
 - Check any new defensive branch against known domain/API assumptions. If the user or project states the value cannot occur, do not add handling for it without asking.
+- Trace changed input paths and remove downstream field revalidation within the requested scope. Verify input DTO attributes run in middleware, and regex-based fields have one regex, preferably shared with HTML5 `pattern`.
