@@ -30,6 +30,7 @@ Apply these defaults to the requested validation work. Inspect the PHP version, 
 
 - In a standalone component setup, configure the shared validator with `Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator()` through dependency injection. Attributes must actually be loaded.
 - Put declarative constraints on web request DTO properties. Prefer built-in constraints and introduce custom constraints only for rules they cannot express clearly.
+- For email fields, explicitly use `#[Assert\Email(mode: Assert\Email::VALIDATION_MODE_HTML5_ALLOW_NO_TLD)]` (`html5-allow-no-tld`) so backend email syntax matches native `<input type="email">` validation. Symfony's default `html5` mode additionally requires a TLD and therefore differs from native HTML validation.
 - Use `NotBlank` or `NotNull` according to the contract. Format constraints do not necessarily make a field required, and `NotNull` on an already constructed non-nullable property does not validate missing raw input.
 - Use `#[Assert\Valid]` for nested DTOs and object collections after hydration. Cascading constraints do not create nested objects or establish collection element types.
 - Keep HTTP-specific constraints and Symfony violation objects out of domain models and application commands. Translate validated web input into application-owned input at the boundary.
