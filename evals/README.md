@@ -10,7 +10,7 @@ The initial suite focuses on rules that are concrete enough to evaluate consiste
 
 - `php-agent-instructions`: authentication, authorization, guarded deployment, and design-review/self-review routing, including asking for hosting and database choices before recording activation markers.
 - `php-testing-style`: PHPUnit data providers, assertions, test naming, `$actual` result variables, authentication integration coverage, and authorization route inventories.
-- `php-readable-code`: avoiding production API that exists only for tests, naming costly data retrieval operations with `fetch...`, and keeping composed values visible to IDE debuggers.
+- `php-readable-code`: avoiding production API that exists only for tests, REST resource/service CRUD naming and completed creation responses (`201`, member `Location`, public body without secrets), preserving distinct HTML page/form contracts even when a page contains a REST-backed form, naming other costly queries with `fetch...`, and keeping composed values visible to IDE debuggers.
 - `php-solid-review`: behavior-based coverage of all 17 engineering principles, explicit principle naming, implementation self-review, manual review, relevance, positive cases, and trade-offs that should not trigger premature abstractions.
 - `php-templating`: typed page ViewModels, Slim PHP-View selection and partials, explicit HTML escaping versus plain-text output, source-text translation keys, `_t()`, ICU pluralization, per-render locale isolation, and complete locale-specific email-body templates.
 - `php-domain-clarification`: asking questions before coding ambiguous domain scoping.

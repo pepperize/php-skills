@@ -1,0 +1,24 @@
+- description: php-agent-instructions:http-endpoint-contract-routing
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-agent-instructions/SKILL.md
+    additional_skill: file://../php-agent-instructions/assets/php-skill-self-review.md
+    task: |
+      Produce the marked PHP Skill Self Review block for a project instruction
+      file using the authoritative template, including HTTP endpoint contract
+      routing. This is only a request for the block; do not install it or change
+      project configuration.
+  assert:
+    - type: contains
+      value: php-readable-code
+    - type: contains
+      value: '201'
+    - type: contains
+      value: Location
+    - type: llm-rubric
+      value: 'Pass only if the block explicitly distinguishes REST resource endpoints from HTML pages and traditional form actions. REST services keep resource names and CRUD operations; completed resource creation requires a returned resource, 201, member Location and a public representation including its identifier without secrets. HTML pages retain ViewService/Renderer and explicitly required traditional forms retain capability services, rendered errors and success redirects. A server-rendered form submitting to a REST resource endpoint follows REST rules. Fail if those REST requirements are imposed on every POST or on all application services, or the distinction is omitted.'
+  metadata:
+    id: php-agent-instructions:http-endpoint-contract-routing
+    skill: php-agent-instructions
+    kind: apply

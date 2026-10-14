@@ -1,6 +1,6 @@
 ---
 name: php-readable-code
-description: Use when writing, refactoring, or reviewing PHP production code around readability, responsibilities, naming, REST API resource/controller/DTO naming, guard clauses, factories, utilities, nullable collections, or test-only production code.
+description: Use when writing, refactoring, or reviewing PHP production code around readability, responsibilities, naming, REST resource/service/DTO naming and creation responses, server-rendered page and HTML form distinctions, guard clauses, factories, utilities, nullable collections, or test-only production code.
 ---
 
 # PHP Readable Code
@@ -80,15 +80,17 @@ When a class mainly creates a returned object, prefer the Factory pattern: name 
 
 ## REST API Naming
 
+- Select conventions by the endpoint's contract. REST resource endpoints, server-rendered page endpoints, and traditional HTML form actions have different naming and response contracts. Neither the HTTP method nor the fact that a browser form exists selects the contract. A server-rendered form submitting to a REST resource endpoint follows REST rules. Read [HTTP endpoint examples](references/http-endpoint-examples.md) before designing or refactoring these boundaries.
 - For new or intentionally redesigned REST endpoints, name resource collections with plural nouns from the domain language. Let the HTTP method express the operation: `POST /api/users` creates a user; `GET /api/users/{userId}` reads a user.
 - Choose the resource actually created or addressed. Do not name a user-creation endpoint after its registration form, controller, or workflow. Use `/api/registrations` only when a registration is itself a domain resource with its own identity and lifecycle.
 - Name REST controllers after the addressed domain resource: `UserController` handles `/api/users`. Controller methods mirror the HTTP verb and route resource, such as `postUsers()` and `getUsers()`. Do not name a REST controller after the registration form or workflow.
 - Name REST request DTOs after the operation and resource with a `Request` suffix: `CreateUserRequest` is the body of `POST /api/users`. Reserve names such as `RegistrationValues` or `UserCreationValues` for traditional form data. A browser form calling a REST API still uses REST request naming.
 - Prefer separate request and response DTOs so accepted input and returned output have independent contracts. Use names such as `CreateUserRequest` and `CreateUserResponse`, or `UserResponse` for a returned user representation. A shared `UserDto` is admissible when the same object deliberately represents both request and response; do not default to sharing it. These HTTP DTOs remain distinct from the domain entity `User`.
-- Application services and frontend methods may retain capability names such as `RegistrationService` and `register()`; that does not justify workflow names for REST controllers or request DTOs.
-- Treat a request to refactor a REST endpoint according to this skill as including corrections to its route, controller, and DTO names. Preserve explicitly required compatibility and unrelated API behavior; do not silently exclude naming corrections just because the old names already exist. Update routes, clients, tests, and contract documentation together. Do not add compatibility aliases without a caller or contract that requires them.
+- For REST resource operations, keep the resource name across the controller, application service, and DTOs: `UserController`, `UserService`, `CreateUserRequest`, and `UserResponse`. Use `create`, `read`, `update`, and `delete` for supported CRUD operations; `UserService::create()` creates a User. Do not introduce workflow synonyms such as `RegistrationService::register()` for the same REST resource operation. Add only operations callers need; CRUD naming does not require a generic base service or unused methods.
+- For server-rendered pages, use page ViewServices and Renderers. For traditional HTML form actions, capability names such as `RegistrationService::register()` remain appropriate. Apply the existing submission-flow rules in `php-request-validation`; do not impose REST CRUD names or resource-creation responses on these endpoints. Frontend UI capabilities may also retain workflow names.
+- Treat a request to refactor a REST endpoint according to this skill as including corrections to its route, controller, application-service, and DTO names. Preserve explicitly required compatibility and unrelated API behavior; do not silently exclude naming corrections just because the old names already exist. Update routes, clients, tests, and contract documentation together. Do not add compatibility aliases without a caller or contract that requires them.
 
-For a registration flow that creates a `User`:
+For a REST resource operation that creates a `User`:
 
 | Good | Bad | Reason |
 | --- | --- | --- |
@@ -96,8 +98,17 @@ For a registration flow that creates a `User`:
 | `POST /api/users` | `POST /api/registerUser` | The HTTP method expresses the operation rather than an action in the path. |
 | `GET /api/users/{userId}` | `GET /api/user/{userId}` | A member remains addressed under the plural resource collection. |
 | `UserController::postUsers()` | `RegistrationController::postRegistration()` | The controller names the resource and the handler mirrors the HTTP route. |
+| `UserService::create()` | `RegistrationService::register()` | The REST resource operation keeps the same User vocabulary through its application service. |
 | `CreateUserRequest` | `RegistrationValues`, `UserCreationValues` | A REST request body names the operation and resource rather than form values. |
 | Separate `CreateUserRequest` and `CreateUserResponse` | Automatically sharing a `UserDto` | Input and output contracts can evolve independently. |
+
+## REST Resource Creation Responses
+
+- For a REST POST that completes resource creation, require all three: `201 Created`, a `Location` header identifying the created resource's canonical member URL, and a response body representing that resource, including its identifier and server-assigned public values. These are this skill collection's conventions; do not describe the mandatory body as an HTTP-standard requirement.
+- The resource service's `create()` returns the created resource. The controller passes the same validated input DTO to the service, maps the returned resource to an explicit public response DTO, generates its member URL, and completes the HTTP response. Keep request/response objects, status selection, URL generation, and JSON serialization out of the resource service.
+- Explicitly select response fields. Never serialize a domain entity wholesale or serialize the submitted input as the response; omit passwords, hashes, bearer tokens, and other secrets. Use the project's existing serializer/responder and response-mapping convention rather than inventing one for the example.
+- Pending verification or another lifecycle state does not make completed resource creation asynchronous. Use `202 Accepted` only for an explicitly asynchronous contract whose processing has not completed. POST actions that do not create a resource and explicitly required existing compatibility contracts retain their own documented responses; flag a conflict with these defaults instead of silently treating it as the normal creation shape.
+- For a traditional HTML form action, retain the HTML contract: render invalid submissions with preserved safe values and the appropriate status, and ordinarily redirect after success with `303 See Other` (Post/Redirect/Get). A server-rendered GET returns HTML from its page ViewModel and renderer. Neither flow requires a JSON resource body or `201` creation response.
 
 ## Method Names
 
@@ -110,7 +121,8 @@ For a registration flow that creates a `User`:
 
 ### Fetching Data
 
-- Use `fetch...` for application-service operations that perform repository, filesystem, network, or other potentially costly I/O. Do not name these operations `get...`, because `get` suggests a cheap accessor.
+- For REST resource services, keep the CRUD name `read(...)` even when it performs repository I/O. This scoped naming rule takes precedence over `fetch...` guidance. Repository contracts keep their own established `find(...)` and `findAll(...)` names.
+- Outside REST resource services, use `fetch...` for query operations that perform repository, filesystem, network, or other potentially costly I/O. Do not name these operations `get...`, because `get` suggests a cheap accessor.
 - Prefer a purpose-revealing name such as `fetchViewData()` over a generic `fetch()`.
 - HTTP controller methods may retain names such as `getPrivacyPolicy()` when `get` represents the HTTP verb.
 
@@ -152,7 +164,8 @@ Before finalizing PHP code changes:
 
 - For a non-trivial implementation or refactor, also use `php-solid-review` to review the resulting diff against only the engineering principles that materially apply. Fix meaningful findings before finalizing; do not enumerate principles that have no finding.
 - Review every new or renamed injected dependency and use the complete declared short type in lower camel case.
-- Review new or refactored REST endpoints for plural domain resource paths, resource-named controllers, HTTP/route-aligned handler names, and operation/resource-named request DTOs. Prefer separate request and response DTOs; verify any shared DTO is intentional. Do not carry traditional form `Values` naming into a REST API.
+- Identify each changed endpoint's contract before reviewing naming and responses. For REST resource endpoints, verify plural domain resource paths, resource-named controllers and application services, CRUD service operations, HTTP/route-aligned handlers, and operation/resource-named request DTOs. Prefer separate request and response DTOs; verify any shared DTO is intentional. Do not carry traditional form `Values` naming into a REST API or force REST naming onto an HTML workflow.
+- For a completed REST resource-creation POST, verify `create()` returns the created resource, the controller builds its public representation from that returned resource, and the response has `201`, the correct member `Location`, and a body containing its identifier without secrets. For server-rendered pages and traditional HTML form actions, verify their HTML rendering/error/redirect contract instead.
 - Review every newly added or renamed method.
 - Classify each as accessor/property, boolean predicate, action/operation, or factory/construction helper.
 - Accessors may use noun names. Predicates should use `is`, `has`, `can`, `should`, or similar.

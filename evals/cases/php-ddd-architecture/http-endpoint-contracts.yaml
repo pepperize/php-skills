@@ -1,0 +1,36 @@
+- description: php-ddd-architecture:http-endpoint-contracts
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-ddd-architecture/SKILL.md
+    additional_skill: file://../php-readable-code/SKILL.md
+    project_instructions: |
+      This project uses Domain-Driven Design. Controllers and application services
+      live under App/Frontend, domain models and repositories under Domain, and
+      Slim composition and middleware under Infrastructure. The project has both
+      a synchronous REST User API and an explicitly required traditional HTML
+      registration form POST. Existing middleware delivers validated typed input;
+      no endpoint compatibility constraint applies.
+    task: |
+      Outline the controller, service, DTO and response contract for POST /api/users
+      and POST /en/registration. The first creates a User resource; the second
+      handles a traditional HTML form and navigates to a completion page.
+      Explain where repository access, URL generation and serialization belong.
+      Do not implement new infrastructure or unrelated operations.
+  assert:
+    - type: contains
+      value: UserService
+    - type: contains
+      value: RegistrationService
+    - type: contains
+      value: '201'
+    - type: contains
+      value: '303'
+    - type: contains
+      value: Location
+    - type: llm-rubric
+      value: 'Pass only if REST uses UserController::postUsers(), CreateUserRequest, and UserService::create() returning User, followed by public response mapping and 201/member Location/body without secrets at the web boundary. The HTML form retains RegistrationService::register() and form values, rendered errors with a complete page ViewModel and 422, and a successful 303 redirect. Repository access belongs in the application service through a domain repository, while HTTP URLs and serialization stay in the web boundary. Fail if REST conventions are forced onto the HTML action, domain objects receive HTTP mechanisms, controllers access repositories, input is revalidated downstream, or a fourth layer/generic CRUD abstraction is invented.'
+  metadata:
+    id: php-ddd-architecture:http-endpoint-contracts
+    skill: php-ddd-architecture
+    kind: apply

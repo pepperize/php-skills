@@ -1,0 +1,217 @@
+- description: php-readable-code:rest-resource-creation
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    additional_skill: file://../php-readable-code/references/http-endpoint-examples.md
+    project_instructions: |
+      This is a synchronous REST API on Slim. POST /api/users creates and persists
+      a User before returning. Existing validation middleware delivers the typed
+      CreateUserRequest. Existing JsonResponseFactory::create(object $body, int $status)
+      returns a PSR-7 response. RouteParserInterface is injectable and the named
+      member route users.read uses userId. User exposes string id, name, email,
+      and passwordHash. Its id and stored values are assigned by the service.
+      No existing response compatibility requirement applies.
+    task: |
+      Refactor the creation endpoint and its application-service naming to the
+      supplied conventions. Show the controller, the service method signature,
+      and public response DTO. Explain the successful HTTP response. Preserve
+      the existing creation operation and input validation; its implementation
+      need not be rewritten. The User may still await email verification.
+    code: |
+      final class UserController
+      {
+          public function __construct(
+              private RegistrationService $registrationService,
+              private JsonResponseFactory $jsonResponseFactory,
+          ) {}
+
+          public function postUsers(CreateUserRequest $createUserRequest): ResponseInterface
+          {
+              $this->registrationService->register($createUserRequest);
+
+              return $this->jsonResponseFactory->create(['status' => 'pending'], 202);
+          }
+      }
+  assert:
+    - type: regex
+      value: 'UserService\s+\$userService'
+    - type: regex
+      value: 'function\s+create\s*\(\s*CreateUserRequest\s+\$\w+\s*\)\s*:\s*User\b'
+    - type: regex
+      value: '\$user\s*=\s*\$this->userService->create\(\$createUserRequest\)'
+    - type: contains
+      value: RouteParserInterface
+    - type: contains
+      value: users.read
+    - type: contains
+      value: Location
+    - type: contains
+      value: '201'
+    - type: llm-rubric
+      value: 'Pass only if the resource vocabulary stays User through UserController and UserService::create(), create accepts the same validated CreateUserRequest and returns User, and the controller builds an explicit public response DTO from the returned resource. The completed creation response must be 201 with Location generated from users.read and the created userId and a body containing its id, name and email while excluding passwordHash and other secrets. Pending verification must not justify 202. HTTP URL generation and serialization stay outside the service. Fail for echoing the submitted request, wholesale domain serialization, retaining registration terminology as the REST service API, field revalidation, a generic CRUD base service, or speculative unused CRUD operations.'
+  metadata:
+    id: php-readable-code:rest-resource-creation
+    skill: php-readable-code
+    kind: apply
+
+- description: php-readable-code:rest-resource-creation-review
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    code: |
+      // Synchronous REST resource creation; no compatibility constraint exists.
+      // register() persists a User and returns void. User contains passwordHash.
+      final class UserController
+      {
+          public function __construct(
+              private RegistrationService $registrationService,
+              private JsonResponseFactory $jsonResponseFactory,
+          ) {}
+
+          public function postUsers(CreateUserRequest $createUserRequest): ResponseInterface
+          {
+              $this->registrationService->register($createUserRequest);
+
+              return $this->jsonResponseFactory->create(['status' => 'pending'], 202);
+          }
+      }
+  assert:
+    - type: contains
+      value: UserService
+    - type: contains
+      value: create
+    - type: contains
+      value: '201'
+    - type: contains
+      value: Location
+    - type: llm-rubric
+      value: 'Pass only if the review identifies both the User-to-Registration naming drift and the incomplete creation response. It must recommend UserService::create() returning the created User and a controller that maps that resource to a public DTO and returns 201, its member Location, and a representation including its identifier without secrets. Fail if type-derived property names are treated as the main naming fault, only the response factory is renamed, returning void plus a pending marker is accepted as conventional synchronous creation, or a representation body is incorrectly claimed to be mandatory under HTTP itself.'
+  metadata:
+    id: php-readable-code:rest-resource-creation-review
+    skill: php-readable-code
+    kind: review
+
+- description: php-readable-code:rest-resource-read-vs-page-query
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    task: |
+      Name the application services and their methods for two read paths: a
+      REST GET /api/users/{userId} returning a User representation, and a PHP-rendered
+      registration page fetching RegistrationPageViewModel and rendering HTML.
+      Both require repository I/O. Show only constructor dependencies and method
+      signatures, not implementation or unsupported operations.
+  assert:
+    - type: regex
+      value: 'UserService\s+\$userService'
+    - type: regex
+      value: '(?:function\s+read\s*\(|UserService::read\s*\()'
+    - type: contains
+      value: RegistrationViewService
+    - type: contains
+      value: fetchPage
+    - type: llm-rubric
+      value: 'Pass only if the REST resource service is UserService with read(), despite repository I/O, and the HTML presentation query remains RegistrationViewService::fetchPage() with a page ViewModel and renderer. Do not rename the repository find() contract. Fail for fetchUser(), getUser(), or fetch() replacing the REST read operation, CRUD read() replacing fetchPage(), or inventing unused operations.'
+  metadata:
+    id: php-readable-code:rest-resource-read-vs-page-query
+    skill: php-readable-code
+    kind: apply
+
+- description: php-readable-code:traditional-html-form-review
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    code: |
+      // Explicit project requirement: ordinary HTML form POST /en/registration,
+      // without JavaScript. Middleware validates and binds the typed inputs.
+      // The page ViewModel contains only safe redisplay fields, never passwords.
+      final class RegistrationController
+      {
+          public function __construct(
+              private RegistrationService $registrationService,
+              private RegistrationViewService $registrationViewService,
+              private RegistrationPageRenderer $registrationPageRenderer,
+              private RouteParserInterface $routeParserInterface,
+          ) {}
+
+          public function postRegistration(
+              RegistrationValues $registrationValues,
+              RegistrationValidationResult $registrationValidationResult,
+              ResponseInterface $response,
+          ): ResponseInterface {
+              if ($registrationValidationResult->hasErrors()) {
+                  $registrationPageViewModel = $this->registrationViewService->fetchPageWithValidationErrors(
+                      $registrationValues,
+                      $registrationValidationResult,
+                  );
+                  $unprocessableResponse = $response->withStatus(422);
+
+                  return $this->registrationPageRenderer->render($unprocessableResponse, $registrationPageViewModel);
+              }
+
+              $this->registrationService->register($registrationValues);
+              $location = $this->routeParserInterface->urlFor('registration.complete');
+
+              return $response->withStatus(303)->withHeader('Location', $location);
+          }
+      }
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the review accepts the supplied conventional HTML action without a material finding: RegistrationController, RegistrationValues and RegistrationService::register() are appropriate for this explicitly required HTML workflow; invalid submissions render a page ViewModel with safe preserved values and 422, and success redirects with 303. Fail if it demands UserService::create(), REST request/response DTO names, 201, a JSON resource representation, mandatory JavaScript, additional defensive validation, or a new response factory.'
+  metadata:
+    id: php-readable-code:traditional-html-form-review
+    skill: php-readable-code
+    kind: review
+
+- description: php-readable-code:server-rendered-form-rest-submission
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    additional_skill: file://../php-readable-code/references/http-endpoint-examples.md
+    task: |
+      PHP renders GET /en/registration as a complete HTML page. Its form submits
+      with JavaScript to POST /api/users, which synchronously persists a User.
+      Describe the controller/service/DTO naming and response contract for each
+      endpoint. The API has no existing compatibility constraint. Keep the two
+      endpoints' existing presentation and submission mechanisms.
+  assert:
+    - type: contains
+      value: UserService
+    - type: contains
+      value: CreateUserRequest
+    - type: contains
+      value: fetchPage
+    - type: contains
+      value: '201'
+    - type: contains
+      value: Location
+    - type: llm-rubric
+      value: 'Pass only if the PHP page retains an HTML ViewService/fetchPage/Renderer contract, while POST /api/users uses UserController::postUsers(), CreateUserRequest, UserService::create() returning the resource, and a 201 response with member Location and a public resource body including its identifier without secrets. Fail if server-rendering the initial form makes RegistrationService::register() or an HTML success redirect the REST API contract, or if the page endpoint itself must return a REST creation response.'
+  metadata:
+    id: php-readable-code:server-rendered-form-rest-submission
+    skill: php-readable-code
+    kind: apply
+
+- description: php-readable-code:javascript-capability-post
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    task: |
+      A PHP-rendered contact page has a JavaScript-managed form submitting JSON
+      to POST /contact. Its established ContactService::send(ContactFormValues)
+      forwards the message without creating a persisted domain resource and
+      the endpoint returns an empty 204 response. Review only whether REST
+      resource naming and creation response conventions require changes here.
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the answer preserves this capability endpoint and its documented 204 response: POST, JSON, and JavaScript do not by themselves make it a REST resource creation operation. ContactService::send() and ContactFormValues can stay. Fail if it invents a Contact resource, requires ContactService::create(), forces 201/member Location/resource body, or requires an HTML redirect simply because the initial page was PHP-rendered.'
+  metadata:
+    id: php-readable-code:javascript-capability-post
+    skill: php-readable-code
+    kind: apply

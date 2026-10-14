@@ -1,0 +1,33 @@
+- description: php-request-validation:html-form-contract
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-request-validation/SKILL.md
+    project_instructions: |
+      Slim with configured typed controller arguments. Registration must work as
+      an ordinary HTML form POST without JavaScript. Existing middleware binds
+      RegistrationValues and RegistrationValidationResult on either outcome.
+      RegistrationService::register() accepts the validated RegistrationValues.
+      RegistrationViewService returns a complete RegistrationPageViewModel with
+      safe redisplay fields; RegistrationPageRenderer renders it as HTML. Keep
+      existing CSRF middleware. RouteParserInterface provides registration.complete.
+    task: |
+      Show the controller action and explain invalid and successful submission
+      handling. Preserve the existing endpoint contract and collaborators.
+  assert:
+    - type: regex
+      value: 'postRegistration\s*\([^)]*RegistrationValues\s+\$registrationValues'
+    - type: contains
+      value: RegistrationValidationResult
+    - type: contains
+      value: '422'
+    - type: contains
+      value: '303'
+    - type: contains
+      value: Location
+    - type: llm-rubric
+      value: 'Pass only if the action receives typed middleware-bound values and validation result, renders invalid input with 422 and a complete page ViewModel preserving safe fields without passwords, and calls RegistrationService::register() with the same validated values only on success before returning a 303 Location redirect. Preserve CSRF and keep hydration/field validation in middleware. Fail if REST service/DTO naming, 201, a JSON resource representation or mandatory JavaScript is imposed on this explicitly required HTML form flow, or the controller hydrates or revalidates fields.'
+  metadata:
+    id: php-request-validation:html-form-contract
+    skill: php-request-validation
+    kind: apply

@@ -4,7 +4,7 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 
 ## Skills
 
-- `php-readable-code`: readable PHP code, focused responsibilities, factory naming, REST API resource/controller naming, separate request and response DTOs, nullable collection handling, and avoiding hard-to-read nested method calls.
+- `php-readable-code`: readable PHP code, focused responsibilities, factory naming, REST resource/controller/service/DTO naming and CRUD operations, creation responses with `201`, `Location`, and a public resource representation, distinct server-rendered page and HTML form conventions, nullable collection handling, and avoiding hard-to-read nested method calls. See [HTTP endpoint examples](php-readable-code/references/http-endpoint-examples.md).
 - `php-templating`: typed presentation models, template engine selection, layouts and partials, HTML escaping, interface translation, and complete source-controlled localized page and email content.
 - `php-testing-style`: PHPUnit unit and integration testing conventions, London-style defaults, test layout, naming, and verification scope.
 - `php-solid-review`: pragmatic code, architecture, design, and implementation self-review using SOLID, DRY, KISS, composition, encapsulation, collaboration, and simplicity principles. Findings name only principles that materially apply. Testing guidance stays delegated to `php-testing-style`.
