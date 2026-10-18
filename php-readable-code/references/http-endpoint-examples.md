@@ -4,65 +4,48 @@ Select the convention by the endpoint contract. A POST method, JSON encoding, Ja
 
 | Contract | Naming | Successful response |
 | --- | --- | --- |
-| REST resource creation, `POST /api/users` | `UserController::postUsers()`, `UserService::create(CreateUserRequest): User` | `201`, member `Location`, public resource representation |
+| REST resource creation, `POST /api/users` | `UserController::postUsers()`, `UserService::create(CreateUserRequest): UserDto` | `201`, member `Location`, public resource representation |
 | REST resource read, `GET /api/users/{userId}` | `UserController::getUsers()`, `UserService::read(...)` | Resource representation under the endpoint's read contract |
 | Server-rendered page, `GET /{locale}/registration` | `RegistrationController::getRegistration()`, `RegistrationViewService::fetchPage()`, `RegistrationPageRenderer::render()` | Complete HTML page |
 | Explicit traditional HTML form action, `POST /{locale}/registration` | `RegistrationController::postRegistration()`, `RegistrationService::register()` | Ordinarily a `303` redirect to an HTML page |
 
-CRUD names apply to supported REST resource service operations. Repositories retain `find()`/`findAll()`; presentation queries retain `fetchPage()`. A capability operation that does not create, read, update, or delete a resource keeps its actual operation name.
+CRUD names apply to supported REST resource service operations. Repositories follow [Repository Method Naming](../SKILL.md#repository-method-naming); presentation queries retain `fetchPage()`. A capability operation that does not create, read, update, or delete a resource keeps its actual operation name.
 
 ## Completed REST Resource Creation
 
-The collection requires `201 Created`, `Location`, and a public response body for completed REST creation. This is the agreed coding convention; HTTP itself does not mandate a representation body. `UserService::create()` accepts the same validated `CreateUserRequest`, owns creation and persistence, and returns the created `User` with its assigned identifier and authoritative values. The controller maps those returned values to the public representation. It does not echo the submitted DTO or serialize the domain object wholesale.
+Read the [worked User endpoint](../../php-api-endpoints/references/user-endpoint.md) before implementing this contract. It owns the complete controller/service/DTO/repository example and validation/composition connections.
 
-This example assumes that `User` exposes string `id`, `name`, and `email` values and that the existing named member route `users.read` uses the `userId` argument. Adapt property access and identifier conversion to the actual model. Use the existing route parser so a configured base path is included; do not concatenate a guessed URL or invent a URL-generator wrapper.
+The collection requires `201 Created`, `Location`, and a public response body for completed REST creation. This is the agreed coding convention; HTTP itself does not mandate a representation body. `UserService::create(CreateUserRequest): UserDto` accepts the same validated input, owns creation and persistence, and maps the persisted `User` through `UserDtoFactory` to an output-only DTO with its assigned identifier and authoritative public values.
+
+The controller delegates that DTO to `UserResponseFactory`. The response factory owns JSON serialization and generates the canonical member URL with the existing `RouteParserInterface`, including the configured base path. Keep HTTP statuses, headers, URLs and serialization out of the service; do not return a domain entity for the controller to map.
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace Example\App\Frontend\User;
+namespace Example\App\Api\User;
 
-use Example\App\Frontend\Http\JsonResponseFactory;
 use Psr\Http\Message\ResponseInterface;
-use Slim\Interfaces\RouteParserInterface;
-
-final readonly class UserResponse
-{
-    public function __construct(
-        public string $id,
-        public string $name,
-        public string $email,
-    ) {
-    }
-}
 
 final class UserController
 {
     public function __construct(
         private UserService $userService,
-        private JsonResponseFactory $jsonResponseFactory,
-        private RouteParserInterface $routeParserInterface,
+        private UserResponseFactory $userResponseFactory,
     ) {
     }
 
     public function postUsers(CreateUserRequest $createUserRequest): ResponseInterface
     {
-        $user = $this->userService->create($createUserRequest);
-        $userResponse = new UserResponse($user->id, $user->name, $user->email);
-        $location = $this->routeParserInterface->urlFor(
-            'users.read',
-            ['userId' => $user->id],
-        );
-        $response = $this->jsonResponseFactory->create($userResponse, 201);
+        $userDto = $this->userService->create($createUserRequest);
 
-        return $response->withHeader('Location', $location);
+        return $this->userResponseFactory->create($userDto);
     }
 }
 ```
 
-The explicit response DTO excludes password, password hash, verification/recovery tokens, and session secrets even when the returned domain object holds them. Extend it with public server-assigned fields when the resource contract requires them. Keep the service free of PSR-7 requests/responses, route parsing, status selection, headers, and JSON serialization. Reuse an existing response mapper when mapping needs one; the simple constructor above does not require a new factory.
+This success-path excerpt omits the application-to-HTTP exception translation shown in the full reference. The DTO factory explicitly selects public fields and excludes passwords, hashes, tokens and session secrets. Never echo the submitted request or serialize the entity wholesale. The separate request and output DTOs can evolve independently; `UserDto` is not shared input.
 
 A typical wire response is:
 
@@ -71,10 +54,10 @@ HTTP/1.1 201 Created
 Location: /api/users/7d31c979-f3f0-4ef3-9d78-f9e4c0519248
 Content-Type: application/json
 
-{"id":"7d31c979-f3f0-4ef3-9d78-f9e4c0519248","name":"Alex","email":"alex@example.com"}
+{"id":"7d31c979-f3f0-4ef3-9d78-f9e4c0519248","name":"Alex","email":"alex@example.com","createdAt":"2026-10-18T12:00:00+00:00"}
 ```
 
-An already-created User may still await email verification; that lifecycle state does not make its creation asynchronous. A deliberately asynchronous endpoint may return `202` while processing remains incomplete. An action POST that creates no resource follows its own documented response contract. Surface an explicitly required compatibility conflict rather than silently treating an older generic success/pending response as the conventional completed-creation response.
+An already-created User may still await email verification; that lifecycle state does not make creation asynchronous. A deliberately asynchronous endpoint may return `202` while processing remains incomplete. An action POST that creates no resource follows its own documented response contract. Surface an explicitly required compatibility conflict rather than silently treating an older generic success/pending response as the conventional completed-creation response.
 
 ## Server-rendered Page And Traditional HTML Form Action
 
@@ -162,6 +145,6 @@ The browser validates locally, retains inputs on failure, and owns displayed mes
 
 ## Verification
 
-For completed REST creation, verify that the same validated DTO reaches `create()`, the returned resource supplies the response identifier and values, `Location` targets that member with the configured base path, the status is `201`, and the JSON excludes secrets. Do not use `void` creation plus a fixed pending marker as the positive example.
+For completed REST creation, verify that the same validated DTO reaches `create()`, the persisted entity supplies the public service DTO's identifier and values, the controller delegates that DTO to the response collaborator, `Location` targets that member with the configured base path, the status is `201`, and the JSON excludes secrets. Do not use `void` creation plus a fixed pending marker as the positive example.
 
 For the HTML GET, use the real renderer to verify the complete page. For an explicitly required traditional form POST, verify invalid input renders safe preserved values with `422` and no service call, while valid input invokes the capability service and returns the success redirect. For a REST-backed form on an HTML page, verify each side against its own contract.

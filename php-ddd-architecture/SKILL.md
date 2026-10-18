@@ -25,19 +25,20 @@ When adding, reviewing, or refactoring a repository, read [references/repositori
 
 - Treat an abstraction that retrieves domain objects as a repository regardless of whether its data comes from a database, file, source-controlled data, memory, or external service.
 - Define the repository interface in the domain module that owns the returned model. Keep the returned model in that domain module as well.
-- Domain repository contracts and models must not depend on application, frontend, framework, transport, persistence, or infrastructure types.
+- Domain repository contracts and models must not depend on application, frontend, framework, transport, persistence or infrastructure APIs, except for the following mapping-metadata allowance. In Doctrine projects following the API pattern, mapping attributes on domain entities and embedded values are permitted metadata; honor an explicitly different project mapping policy. Entity-manager configuration, connections, queries, transactions, persistence and flushing stay in infrastructure. Do not introduce duplicate persistence records solely to avoid attributes on the domain model.
 - Put repository implementations in infrastructure. Implementation names may identify their storage mechanism, such as `FilePrivacyPolicyVersionRepository` or `InMemoryForwardingRecipientRepository`.
 - Application services depend on domain repository interfaces. Controllers depend on application services rather than repositories. Framework composition binds repository interfaces to their infrastructure implementations.
 - Use the ubiquitous domain name. Do not introduce a presentation-owned duplicate when several workflows use the same concept.
 - Do not name a domain-object retrieval abstraction `Provider`, `Loader`, or `Reader`. Those names remain valid for collaborators whose responsibility is configuration binding, serialization, transport, or another non-repository concern.
-- Expose only operations required by callers. Do not introduce a generic base repository or speculative `save`, `remove`, or query methods.
+- Expose only operations required by callers. Do not introduce a generic base repository or speculative write or query methods.
+- For entity-exists failures, follow [Repository Conflict Exceptions](../php-logging-exceptions/SKILL.md#repository-conflict-exceptions) with a shared domain `EntityExistsException` owned by the repository contract.
 
-Use these retrieval and absence conventions:
+Follow [Repository Method Naming](../php-readable-code/SKILL.md#repository-method-naming) in `php-readable-code` for read and write operation names. Keep these retrieval and absence conventions:
 
-- A repository operation returning one object is named `find(...)` and returns the declared object type.
-- When the requested object does not exist, `find(...)` throws the domain `NotFoundException`; it does not return `null`.
-- A repository operation returning a list is named `findAll(...)` and documents its element type as a list.
-- When no matching objects exist, `findAll(...)` returns `[]`; it does not throw `NotFoundException` merely because the result is empty.
+- Singular reads use `find(...)` or criteria-based `findOneBy(...)` and return the declared object type.
+- When the requested object does not exist, `find(...)` and `findOneBy(...)` throw the domain `NotFoundException`; they do not return `null`.
+- Collection reads use `findAll()` or criteria-based `findBy(...)` and document their element type as a list.
+- When no matching objects exist, `findAll()` and `findBy(...)` return `[]`; they do not throw `NotFoundException` merely because the result is empty.
 - Do not repeat the repository subject in method names. Prefer `LegalOperatorRepository::find()` over `LegalOperatorRepository::findLegalOperator()`.
 - Report absence as `NotFoundException`. Keep failures reading or decoding an existing data source as technical exceptions.
 
@@ -83,10 +84,9 @@ The use case may apply booking ownership or tenant rules with domain data. It mu
 
 ## Web Boundaries
 
-- Namespaces should expose the architectural side when known: end-user-facing code under frontend namespaces, backend/admin code under backend namespaces.
-- Do not put side-specific controllers or services in a neutral application namespace when the side is known.
+- For REST API endpoints, apply `php-api-endpoints` and read its [worked User endpoint](../php-api-endpoints/references/user-endpoint.md). By default, group API controllers, services, DTOs and factories under `App/Api/<Resource>`; reserve `App/Frontend` for rendered interfaces and traditional HTML actions. Keep existing explicit project layer and side conventions, including a required frontend/backend namespace layout, rather than introducing a fourth presentation layer.
 - Select web naming and responses by the endpoint contract using `php-readable-code`. REST resource operations keep the resource vocabulary through the controller, application service, and DTOs: `UserController`, `UserService::create()`, and `CreateUserRequest` for `POST /api/users`; supported service operations use CRUD names, including `read()` for repository-backed reads. UI or form vocabulary does not override REST naming. Server-rendered pages use ViewServices and Renderers, while traditional HTML form actions may use capability services such as `RegistrationService::register()`.
-- For a completed REST resource-creation POST, the application service returns the created resource and the controller maps it to a public response DTO and returns `201`, its canonical member `Location`, and that representation. Keep HTTP status, headers, URL generation, and serialization at the web boundary, and exclude secrets from output. Read the HTTP endpoint examples referenced by `php-readable-code`; do not apply this REST response contract to HTML page rendering or form redirects.
+- For a completed REST resource-creation POST, the application service maps the persisted entity through a DTO factory and returns the public resource DTO, such as `UserDto`. The controller delegates that DTO to the established response collaborator for `201`, its canonical member `Location`, and that representation; it does not map the entity. Keep HTTP status, headers, URL generation, and serialization at the web boundary, and exclude secrets from output. Read the HTTP endpoint examples referenced by `php-readable-code`; do not apply this REST response contract to HTML page rendering or form redirects.
 - Avoid ambiguous `Public...` and `Admin...` class prefixes when namespace boundaries or route vocabulary name the concept more clearly.
 - Controller method names should mechanically mirror the HTTP route: HTTP verb prefix plus resource noun and optional route action.
 - Keep domain verbs in services or use cases rather than controller method names.

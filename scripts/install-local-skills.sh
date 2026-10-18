@@ -8,6 +8,7 @@ skills=(
   php-clean-architecture
   php-ddd-architecture
   php-readable-code
+  php-api-endpoints
   php-templating
   php-testing-style
   php-solid-review

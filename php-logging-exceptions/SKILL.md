@@ -45,6 +45,13 @@ Avoid helper or factory methods that throw internally when the caller is the pla
 
 Do not add application exceptions only to translate malformed HTTP requests into HTTP responses. Throw or map API-boundary client errors in the controller or API adapter.
 
+## Repository Conflict Exceptions
+
+- Repository writes that fail because an entity already exists throw a generic `EntityExistsException` declared by the repository contract. Keep the generic exception in the layer that owns that contract.
+- Application services catch `EntityExistsException` and translate it into the appropriate resource- or use-case-specific exception, such as `UserAlreadyExistsException` in `UserService`. Keep that specific exception in the application module alongside the owning service.
+- Preserve the original exception as `previous` at each translation boundary.
+- Translate only failures that establish an entity-exists conflict. Keep unrelated storage and integrity failures technical.
+
 ## Exception Boundaries
 
 - Do not catch broad `Throwable` in orchestration code just to log and convert it into `null`, an empty array, or a generic failure result.

@@ -8,7 +8,8 @@ The cases load each skill from the repository's existing `SKILL.md` files throug
 
 The initial suite focuses on rules that are concrete enough to evaluate consistently:
 
-- `php-agent-instructions`: authentication, authorization, guarded deployment, and design-review/self-review routing, including asking for hosting and database choices before recording activation markers.
+- `php-api-endpoints`: transfer of the User implementation pattern to other resources, separate attribute-validated input and output DTOs, service-owned public mapping, direct Doctrine entity persistence, conflict translation and preservation of explicit alternative stacks/mapping policies.
+- `php-agent-instructions`: API endpoint, authentication, authorization, guarded deployment, and design-review/self-review routing, including asking for hosting and database choices before recording activation markers.
 - `php-testing-style`: PHPUnit data providers, assertions, test naming, `$actual` result variables, authentication integration coverage, and authorization route inventories.
 - `php-readable-code`: avoiding production API that exists only for tests, REST resource/service CRUD naming and completed creation responses (`201`, member `Location`, public body without secrets), preserving distinct HTML page/form contracts even when a page contains a REST-backed form, naming other costly queries with `fetch...`, and keeping composed values visible to IDE debuggers.
 - `php-solid-review`: behavior-based coverage of all 17 engineering principles, explicit principle naming, implementation self-review, manual review, relevance, positive cases, and trade-offs that should not trigger premature abstractions.
@@ -146,6 +147,8 @@ Example:
 ```text
 php-testing-style:validation-data-provider
 ```
+
+To run only API endpoint cases after installing the documented dependencies, add `--filter-pattern "php-api-endpoints:"` to the eval command. Also include the affected readable-code, DDD and instruction-routing cases when their contracts change.
 
 ## CI Guidance
 

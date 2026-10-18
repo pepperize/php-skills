@@ -29,8 +29,52 @@
     - type: contains
       value: Location
     - type: llm-rubric
-      value: 'Pass only if REST uses UserController::postUsers(), CreateUserRequest, and UserService::create() returning User, followed by public response mapping and 201/member Location/body without secrets at the web boundary. The HTML form retains RegistrationService::register() and form values, rendered errors with a complete page ViewModel and 422, and a successful 303 redirect. Repository access belongs in the application service through a domain repository, while HTTP URLs and serialization stay in the web boundary. Fail if REST conventions are forced onto the HTML action, domain objects receive HTTP mechanisms, controllers access repositories, input is revalidated downstream, or a fourth layer/generic CRUD abstraction is invented.'
+      value: 'Pass only if REST uses UserController::postUsers(), CreateUserRequest, and UserService::create() returning a public UserDto mapped from the persisted entity inside the service, followed by controller delegation to a response collaborator for 201/member Location/body without secrets at the web boundary. The explicit App/Frontend project layout is preserved. The HTML form retains RegistrationService::register() and form values, rendered errors with a complete page ViewModel and 422, and a successful 303 redirect. Repository access belongs in the application service through a domain repository, while HTTP URLs and serialization stay in the web boundary. Fail if REST conventions are forced onto the HTML action, domain objects receive HTTP mechanisms, controllers access repositories, input is revalidated downstream, or a fourth layer/generic CRUD abstraction is invented.'
   metadata:
     id: php-ddd-architecture:http-endpoint-contracts
+    skill: php-ddd-architecture
+    kind: apply
+
+- description: php-ddd-architecture:attribute-mapped-domain-entity
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-ddd-architecture/SKILL.md
+    additional_skill: file://../php-api-endpoints/SKILL.md
+    project_instructions: |
+      This DDD project follows the User API pattern and uses Doctrine attributes
+      directly on domain entities and embedded values. The domain Project and
+      ProjectRepository belong to Domain/Planning; API collaborators belong to
+      App/Api/Project and concrete persistence belongs to Infrastructure.
+    task: |
+      Review the ownership and dependencies below. The Project mapping is an
+      intentional choice. Explain whether an infrastructure ProjectRecord and
+      mapping factory are needed, and where the service output mapping belongs.
+      Recommend changes only for a concrete boundary problem.
+    code: |
+      namespace Example\Domain\Planning;
+
+      #[\Doctrine\ORM\Mapping\Entity]
+      final class Project
+      {
+          #[\Doctrine\ORM\Mapping\Id]
+          #[\Doctrine\ORM\Mapping\Column(type: 'string')]
+          public string $id;
+      }
+
+      interface ProjectRepository
+      {
+          public function saveAndFlush(Project $project): Project;
+      }
+
+      // Infrastructure owns DoctrineProjectRepository and EntityManagerInterface.
+      // App/Api/Project owns ProjectService and ProjectDtoFactory.
+  assert:
+    - type: contains
+      value: ProjectDto
+    - type: llm-rubric
+      value: 'Pass only if it accepts the intentional Doctrine mapping attributes as permitted domain metadata, retains the domain-owned repository and entity and infrastructure-owned EntityManagerInterface/persistence operations, and rejects adding a duplicate ProjectRecord and mapping factory solely to remove metadata. The service maps the persisted Project through ProjectDtoFactory and returns public ProjectDto; controllers do not map domain entities. Fail if it reports the metadata alone as a dependency violation, moves ORM operations into the domain/service or adds speculative repository methods.'
+  metadata:
+    id: php-ddd-architecture:attribute-mapped-domain-entity
     skill: php-ddd-architecture
     kind: apply

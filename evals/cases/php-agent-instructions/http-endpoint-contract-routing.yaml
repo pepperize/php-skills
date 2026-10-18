@@ -11,13 +11,17 @@
       project configuration.
   assert:
     - type: contains
+      value: php-api-endpoints
+    - type: contains
+      value: UserDto
+    - type: contains
       value: php-readable-code
     - type: contains
       value: '201'
     - type: contains
       value: Location
     - type: llm-rubric
-      value: 'Pass only if the block explicitly distinguishes REST resource endpoints from HTML pages and traditional form actions. REST services keep resource names and CRUD operations; completed resource creation requires a returned resource, 201, member Location and a public representation including its identifier without secrets. HTML pages retain ViewService/Renderer and explicitly required traditional forms retain capability services, rendered errors and success redirects. A server-rendered form submitting to a REST resource endpoint follows REST rules. Fail if those REST requirements are imposed on every POST or on all application services, or the distinction is omitted.'
+      value: 'Pass only if the block explicitly distinguishes REST resource endpoints from HTML pages and traditional form actions. REST services keep resource names and CRUD operations; completed resource creation requires a public output DTO mapped from the persisted entity by the service, controller delegation to a response collaborator for 201/member Location/a representation including its identifier without secrets. The block routes API implementation/refactoring to php-api-endpoints and its worked User reference, with attribute validation and direct Doctrine entity mapping only when appropriate to the project. HTML pages retain ViewService/Renderer and explicitly required traditional forms retain capability services, rendered errors and success redirects. A server-rendered form submitting to a REST resource endpoint follows REST rules. Fail if those REST requirements are imposed on every POST or on all application services, or the distinction is omitted.'
   metadata:
     id: php-agent-instructions:http-endpoint-contract-routing
     skill: php-agent-instructions

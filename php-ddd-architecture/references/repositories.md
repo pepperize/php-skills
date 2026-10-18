@@ -34,7 +34,7 @@ interface OwnerRepository
 
 ## Collection Repository
 
-A repository that returns a list uses `findAll()` and returns an empty list when there are no results.
+Use `findAll()` for the complete collection and `findBy(...)` for a criteria-filtered collection. Both return a list and use an empty list when there are no results. For one criteria-matched object, use `findOneBy(...)` with the same `NotFoundException` contract as `find(...)`.
 
 ```php
 namespace Example\Domain\Inquiry;
@@ -47,6 +47,10 @@ interface ForwardingRecipientRepository
 ```
 
 If several workflows consume the recipients, keep the shared `ForwardingRecipient` model in the domain instead of creating a frontend-specific `PrivacyPolicyRecipient` copy.
+
+## Direct Doctrine Entity Persistence
+
+For Doctrine-backed API resource writes, read the [worked User endpoint](../../php-api-endpoints/references/user-endpoint.md#entity-and-repository). It shows a domain-owned `UserRepository::saveAndFlush(User $user): User`, a directly attribute-mapped domain `User`, and an infrastructure `DoctrineUserRepository` using `EntityManagerInterface`. Mapping attributes on entities and embedded values are permitted metadata when following this pattern; respect an explicit alternative project mapping policy. Keep ORM APIs out of repository signatures and persistence operations out of domain/application code. Do not add a separate persistence record solely to remove mapping attributes.
 
 ## Infrastructure Implementations
 

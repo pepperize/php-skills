@@ -1,0 +1,149 @@
+- description: php-api-endpoints:project-resource-implementation
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-api-endpoints/SKILL.md
+    additional_skill: file://../php-api-endpoints/references/user-endpoint.md
+    project_instructions: |
+      This project uses DDD, Slim 4 and Doctrine ORM with entity attributes.
+      API collaborators live under App/Api, domain models/repository contracts
+      under Domain/Planning and adapters under Infrastructure. POST /api/projects
+      creates a Project synchronously. Its only accepted body field is a string
+      name, required and at most 100 characters, without normalization. Existing
+      ProjectFactory creates the domain entity with its server-owned fields.
+      Project has id, name, createdAt and a private syncSecret. Existing shared
+      infrastructure provides JSON object parsing, Problem Details, a JSON
+      response factory and guarded typed request-attribute invocation. The
+      canonical projects.read route uses projectId and a base path may be set.
+      No compatibility constraint applies. Authorization is already handled.
+    task: |
+      Adapt the worked User pattern to this Project creation endpoint. Show
+      the input DTO, public DTO and mapping factory, service, controller,
+      response factory and repository contract. Show the Doctrine persistence
+      success path and outline the resource-specific middleware and composition.
+      Explain where validation, persistence metadata, assigned IDs and HTTP
+      output belong. Reuse the existing infrastructure and ProjectFactory;
+      implement only creation, without adding another workflow.
+  assert:
+    - type: regex
+      value: 'function\s+create\s*\(\s*CreateProjectRequest\s+\$\w+\s*\)\s*:\s*ProjectDto\b'
+    - type: contains
+      value: ProjectDtoFactory
+    - type: contains
+      value: saveAndFlush
+    - type: contains
+      value: EntityManagerInterface
+    - type: contains
+      value: projects.read
+    - type: contains
+      value: Location
+    - type: contains
+      value: '201'
+    - type: llm-rubric
+      value: 'Pass only if the result transfers the resource vocabulary to ProjectController::postProjects(), ProjectService::create(CreateProjectRequest): ProjectDto and a separate output-only ProjectDto. Symfony attributes declare input constraints. Middleware coordinates a hydration-result factory and request validator with typed errors, executes validation once at the input boundary, and forwards the same class-keyed DTO to the typed controller/service without downstream field validation. The service uses a domain repository, maps its returned persisted Project through ProjectDtoFactory, and excludes syncSecret. The controller delegates DTO output to a response factory owning 201, canonical projects.read/projectId Location with the base path, and JSON. Doctrine attributes stay on the domain Project while EntityManagerInterface/persist/flush stay in infrastructure, with a focused saveAndFlush(Project): Project contract. Composition must register the required DTO and validation route and enable real attribute metadata without putting submitted DTOs in DI. Fail for returning entities for controllers to map, generic CRUD infrastructure, duplicate persistence records, copied User/registration rules, unused operations or authorization replacement.'
+  metadata:
+    id: php-api-endpoints:project-resource-implementation
+    skill: php-api-endpoints
+    kind: apply
+
+- description: php-api-endpoints:persistence-conflict-review
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-api-endpoints/SKILL.md
+    additional_skill: file://../php-api-endpoints/references/user-endpoint.md
+    project_instructions: |
+      This DDD API uses directly attribute-mapped Doctrine Project entities,
+      domain repository contracts and infrastructure adapters. Its established
+      database mechanism can identify the unique project-name constraint using
+      structured information, distinct from generated-ID and other failures.
+      A duplicate project name is an explicitly public HTTP 409 conflict.
+    task: |
+      Review this persistence exception boundary and explain the smallest
+      correction through repository, service and HTTP layers. The direct
+      Doctrine attributes on Project are an intentional project choice.
+      Do not redesign the persistence model or add a preflight uniqueness check.
+    code: |
+      final class DoctrineProjectRepository implements ProjectRepository
+      {
+          public function __construct(private EntityManagerInterface $entityManagerInterface) {}
+
+          public function saveAndFlush(Project $project): Project
+          {
+              try {
+                  $this->entityManagerInterface->persist($project);
+                  $this->entityManagerInterface->flush();
+              } catch (\Throwable $exception) {
+                  throw new ProjectAlreadyExistsException($exception->getMessage());
+              }
+
+              return $project;
+          }
+      }
+  assert:
+    - type: contains
+      value: EntityExistsException
+    - type: contains
+      value: ProjectAlreadyExistsException
+    - type: contains
+      value: previous
+    - type: contains
+      value: '409'
+    - type: llm-rubric
+      value: 'Pass only if the review rejects catching every Throwable and falsely reporting every failure as a duplicate. It must preserve domain-owned ProjectRepository and the intentional ORM metadata, use the established structured classifier only for proven project-name conflicts, translate them into contract-owned EntityExistsException then service-owned ProjectAlreadyExistsException then the HTTP 409 failure, and preserve original causes with previous. Other technical/integrity errors remain technical. Fail for parsing exception-message text, a uniqueness preflight replacing the constraint, returning an HTTP response from the repository, leaking diagnostic messages, recommending duplicate ProjectRecord models or requiring domain mapping attributes to move.'
+  metadata:
+    id: php-api-endpoints:persistence-conflict-review
+    skill: php-api-endpoints
+    kind: review
+
+- description: php-api-endpoints:explicit-persistence-policy
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-api-endpoints/SKILL.md
+    project_instructions: |
+      This existing DDD project uses Slim and explicit Doctrine XML mapping.
+      AGENTS.md requires framework-independent domain models and retaining XML
+      mapping. API code lives in App/Frontend by explicit project convention.
+      Its existing validator and request-argument strategy already provide a
+      validated CreateProjectRequest. A ProjectRepository persists domain
+      Project directly; a ProjectDtoFactory and JSON responder already exist.
+    task: |
+      Apply the API endpoint skill to a new synchronous Project creation API.
+      Explain the controller/service/output/persistence organization and any
+      changes needed to the mapping format, namespace layout or infrastructure.
+      Do not implement code or migrate unrelated existing endpoints.
+  assert:
+    - type: contains
+      value: ProjectDto
+    - type: llm-rubric
+      value: 'Pass only if it preserves the explicit XML mapping, framework-independent models and App/Frontend layout while applying ProjectController -> ProjectService::create(validated CreateProjectRequest) -> ProjectRepository with a public ProjectDto returned through ProjectDtoFactory and a response collaborator owning 201/member Location/JSON. It reuses the existing validator, invocation and response infrastructure. Fail if it demands ORM attributes, App/Api migration, duplicate persistence records, new Doctrine/framework installation, input revalidation or a fourth layer despite the explicit project policies.'
+  metadata:
+    id: php-api-endpoints:explicit-persistence-policy
+    skill: php-api-endpoints
+    kind: apply
+
+- description: php-api-endpoints:existing-pdo-stack
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-api-endpoints/SKILL.md
+    project_instructions: |
+      This project does not select DDD or Clean Architecture. Its Slim API has
+      existing resource modules, PDO repositories, an input validator, a typed
+      request-argument strategy and a JSON response collaborator. It does not
+      use Doctrine. POST /api/projects synchronously creates a Project through
+      its existing repository. CreateProjectRequest and ProjectDtoFactory exist.
+    task: |
+      Describe how to apply this API pattern to Project creation. State which
+      collaborators to reuse, where public output mapping belongs and whether
+      the pattern requires changing the persistence stack or directory layout.
+  assert:
+    - type: contains
+      value: ProjectDto
+    - type: llm-rubric
+      value: 'Pass only if it reuses PDO persistence, the current resource-module layout and established validator/invocation/response collaborators. ProjectService::create() accepts the same validated CreateProjectRequest, uses the existing repository and ProjectDtoFactory to return public ProjectDto, and the controller delegates HTTP 201/member Location/JSON to the response collaborator. Fail if it activates a DDD/Clean Architecture skill without project instructions, demands new Domain/App/Infrastructure directories, installs Doctrine or Symfony solely to apply the pattern, or introduces duplicate input DTOs, entity field validation or generic CRUD machinery.'
+  metadata:
+    id: php-api-endpoints:existing-pdo-stack
+    skill: php-api-endpoints
+    kind: apply
