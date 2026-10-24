@@ -13,6 +13,21 @@ description: Use when writing, refactoring, or reviewing PHP production code aro
 - Avoid passing non-trivial method calls directly as arguments when an intermediate variable would clarify intent. Name semantically important intermediate results.
 - Prefer simple, common words that non-native speakers can read without looking them up.
 
+## Backend Resource Flow
+
+For standard backend resource operations, start with `Controller -> Service -> Repository`, with an optional technical `Client` behind the repository. Derive collaborator names from their responsibilities in this flow:
+
+- Controllers adapt HTTP input, call services and complete HTTP responses.
+- Services accept application input DTOs, coordinate the operation and return output DTOs for resource results.
+- Repositories accept entities for persistence and return entities for entity results. Lookups may take identifiers or criteria; request and response DTOs do not cross this boundary.
+- Factories construct entities from input DTOs and output DTOs from entities. Services coordinate these factories around repository calls.
+
+Use the corresponding `Controller`, `Service`, `Repository` and `Factory` suffixes. DTO-to-entity and entity-to-DTO construction use `<Product>Factory::create(...)`, rather than a new role name for the same work. A repository implementation may identify its mechanism, such as `DoctrineUserRepository`, while retaining its repository role.
+
+Choose another collaborator suffix only for a concrete different responsibility, such as middleware, validation, rendering or technical client communication. DTOs, entities and other data carriers retain their own names. Preserve explicit project contracts and the established ViewService/Renderer patterns for server-rendered pages.
+
+Read the [worked resource flow and naming examples](../php-api-endpoints/references/user-endpoint.md#flow-and-naming) when implementing or refactoring these collaborators. Classify the architectural role before choosing the name; returning an object alone does not distinguish a service, repository or factory.
+
 ## Dependency Names
 
 Name each injected dependency after its complete declared short type, converted to lower camel case. Preserve role suffixes such as `Repository`, `Factory`, `Generator`, `Service`, `Client`, and `Interface`; they distinguish the collaborator from the values it returns.
@@ -76,7 +91,11 @@ Business decisions about permissions, ownership, uniqueness, and lifecycle trans
 
 ## Factories
 
-When a class mainly creates a returned object, prefer the Factory pattern: name the class after the product plus `Factory`, and name the main method `create(...)`.
+Before choosing a class name, identify its primary responsibility. When that responsibility is constructing and returning an object or object graph, name the class after its product plus `Factory` and name the main method `create(...)`.
+
+Reflection, cloning, metadata interpretation and nested construction are implementation details; they do not justify using `Generator` for an object factory. For example, a collaborator that derives a Symfony `Assert\Collection` from DTO metadata is a `DtoConstraintsFactory::create(...)`.
+
+Returning an object alone does not make a class a factory: retrieval, validation and other operations retain their own roles. Preserve explicit user/project naming requirements and framework-required contracts.
 
 ## Repository Method Naming
 
@@ -183,6 +202,10 @@ Do not add production code only to make tests easier. Avoid test-only constructo
 
 Before finalizing PHP code changes:
 
+- Determine the task's review set with `git status --short` and staged/unstaged diffs. Read task-created untracked PHP files explicitly; `git diff` alone omits them.
+- For every new or renamed class, or class whose responsibility changed, identify its primary responsibility and returned product, if any, from its implementation. Verify the class and main method against the applicable naming rule; fix mismatches in affected dependencies, callers, tests and documentation.
+- For standard resource operations, trace controller DTO input through the service, entity factory, entity repository and output DTO factory. Verify the role suffixes and explain any concrete departure from this flow.
+- Briefly report the role, product and naming decision for newly introduced collaborators.
 - For a non-trivial implementation or refactor, also use `php-solid-review` to review the resulting diff against only the engineering principles that materially apply. Fix meaningful findings before finalizing; do not enumerate principles that have no finding.
 - Review every new or renamed injected dependency and use the complete declared short type in lower camel case.
 - Identify each changed endpoint's contract before reviewing naming and responses. For REST resource endpoints, verify plural domain resource paths, resource-named controllers and application services, CRUD service operations, HTTP/route-aligned handlers, and operation/resource-named request DTOs. Prefer separate request and response DTOs; verify any shared DTO is intentional. Do not carry traditional form `Values` naming into a REST API or force REST naming onto an HTML workflow.

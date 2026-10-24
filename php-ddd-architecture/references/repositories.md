@@ -86,7 +86,7 @@ final class FilePrivacyPolicyVersionRepository implements PrivacyPolicyVersionRe
 }
 ```
 
-When retrieval uses a remote API, keep the domain-facing retrieval contract on the repository and let its infrastructure implementation call a technical client:
+When retrieval uses a remote API, keep the domain-facing retrieval contract on the repository and let its infrastructure implementation call a technical client. The client's existing `LegalOperatorResponse` is a transport DTO; an infrastructure factory constructs the domain model from it. The service still receives `LegalOperator` from the repository and uses its own output DTO factory. Keep the client, transport type and transport-to-entity factory in infrastructure so the domain contract does not depend on them.
 
 ```php
 namespace Example\Infrastructure\LegalOperator;
@@ -96,18 +96,37 @@ use Example\Domain\LegalOperator\LegalOperatorRepository;
 
 final class RemoteLegalOperatorRepository implements LegalOperatorRepository
 {
-    public function __construct(private LegalOperatorClient $client)
+    public function __construct(
+        private LegalOperatorClient $legalOperatorClient,
+        private LegalOperatorFactory $legalOperatorFactory,
+    )
     {
     }
 
     public function find(): LegalOperator
     {
-        $response = $this->client->fetchLegalOperator();
+        $legalOperatorResponse = $this->legalOperatorClient->fetchLegalOperator();
 
+        return $this->legalOperatorFactory->create($legalOperatorResponse);
+    }
+}
+```
+
+The factory owns the transport-to-entity construction:
+
+```php
+namespace Example\Infrastructure\LegalOperator;
+
+use Example\Domain\LegalOperator\LegalOperator;
+
+final class LegalOperatorFactory
+{
+    public function create(LegalOperatorResponse $legalOperatorResponse): LegalOperator
+    {
         return new LegalOperator(
-            $response->name,
-            $response->postalAddressLines,
-            $response->email,
+            $legalOperatorResponse->name,
+            $legalOperatorResponse->postalAddressLines,
+            $legalOperatorResponse->email,
         );
     }
 }

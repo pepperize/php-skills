@@ -4,6 +4,7 @@ This reference adapts the Zeitenlogger User endpoint organization into a small `
 
 Read the sections needed for the work:
 
+- [Flow and naming](#flow-and-naming)
 - [Layout](#layout)
 - [Input and validation](#input-and-validation)
 - [Entity and repository](#entity-and-repository)
@@ -11,6 +12,38 @@ Read the sections needed for the work:
 - [Controller and HTTP response](#controller-and-http-response)
 - [Composition](#composition)
 - [Verification](#verification)
+
+## Flow And Naming
+
+The default resource flow is `Controller -> Service -> Repository`, optionally followed by a technical `Client` behind the repository. Identify each collaborator's role before naming it. The input DTO and output DTO are the service's contracts; the entity is the repository's contract. Factories bridge those representations.
+
+| Collaborator | Responsibility and contract |
+| --- | --- |
+| `UserController` | Receives validated `CreateUserRequest`, calls `UserService` and delegates HTTP response creation. |
+| `UserService` | Accepts `CreateUserRequest`, coordinates factories and the repository, and returns `UserDto`. |
+| `UserFactory` | Constructs `User` from `CreateUserRequest` through `create(...)`. A product-specific name such as `PendingUserFactory` may distinguish an actual creation variant. |
+| `UserRepository` | Accepts `User` for persistence and returns `User` with authoritative persisted values. Reads may accept identifiers or criteria. |
+| `UserDtoFactory` | Constructs the output-only `UserDto` from the repository's returned `User` through `create(...)`. |
+| `DoctrineUserRepository` | Implements the entity-facing repository contract using Doctrine; ORM access stays in this implementation. |
+
+The creation operation makes the roles visible:
+
+```text
+UserController::postUsers(CreateUserRequest)
+  -> UserService::create(CreateUserRequest): UserDto
+       -> UserFactory::create(CreateUserRequest): User
+       -> UserRepository::saveAndFlush(User): User
+       -> UserDtoFactory::create(User): UserDto
+  -> UserResponseFactory::create(UserDto): ResponseInterface
+```
+
+The service orchestrates the sequence. Its factories own DTO/entity construction; the controller does not receive an entity to translate, and the repository does not accept a request DTO or return a public response DTO. Use `<Product>Factory::create(...)` for these conversions. Mapping fields does not establish a separate `Mapper`, `Converter` or `Generator` role. Returning an object alone does not make the service or repository a factory: their primary responsibilities are application orchestration and persistence/retrieval.
+
+`DoctrineUserRepository::saveAndFlush(User $user): User` is an example of the repository boundary. Doctrine may hydrate entities directly on reads; this flow does not require a second persistence model or an additional factory around ordinary ORM hydration.
+
+When the data source is a remote API, the infrastructure path can be `Service -> Repository -> Client`. The client owns technical communication; the repository returns the application's entity. A factory can construct that entity from the client's transport DTO, while the service still uses its output DTO factory. See the [repository/client example](../../php-ddd-architecture/references/repositories.md#infrastructure-implementations) for this split. Keep factories that consume application DTOs in application code and factories that consume infrastructure transport types in infrastructure; domain repository contracts remain independent of both.
+
+These suffixes name collaborators in the standard flow. Entities, DTOs and other data carriers have their own names. Other collaborator suffixes need a concrete different responsibility, such as `ValidationMiddleware`, `Validator`, `Renderer` or `Client`; explicit project conventions and server-rendered ViewService/Renderer flows remain in place. Add only the operations and collaborators the actual contract needs.
 
 ## Layout
 

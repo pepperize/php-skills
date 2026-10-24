@@ -1,0 +1,79 @@
+- description: php-readable-code:untracked-object-factory-self-review
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    task: |
+      Perform the required pre-final naming self-review for the collaborator
+      you just added. git status --short shows these task-created files:
+        ?? backend/src/Http/DtoConstraintGenerator.php
+        ?? backend/src/Http/RequestValidationMiddleware.php
+      git diff and git diff --cached are empty. The relevant source is below.
+      collectFields() is correct and its body is omitted: it reflects DTO input
+      types/defaults and copies Symfony property constraints into field rules.
+      Preserve that behavior. Show the corrected collaborator name, public
+      operation, and affected consumer dependency and call. Briefly explain
+      the role and returned product behind your naming decision.
+    code: |
+      use Symfony\Component\Validator\Constraints as Assert;
+      use Symfony\Component\Validator\Validator\ValidatorInterface;
+
+      final class DtoConstraintGenerator
+      {
+          public function __construct(private ValidatorInterface $validatorInterface) {}
+
+          public function generate(string $dtoClass): Assert\Collection
+          {
+              $classMetadata = $this->validatorInterface->getMetadataFor($dtoClass);
+              $fields = $this->collectFields($dtoClass, $classMetadata);
+
+              return new Assert\Collection(fields: $fields);
+          }
+
+          // Existing correct collectFields() implementation omitted.
+      }
+
+      final class RequestValidationMiddleware
+      {
+          public function __construct(private DtoConstraintGenerator $dtoConstraintGenerator) {}
+
+          public function process(array $body): void
+          {
+              $constraints = $this->dtoConstraintGenerator->generate(CreateUserRequest::class);
+              // Existing validation and dispatch omitted.
+          }
+      }
+  assert:
+    - type: regex
+      value: 'class\s+\w+Factory\b'
+    - type: regex
+      value: 'function\s+create\s*\('
+    - type: icontains
+      value: untracked
+    - type: llm-rubric
+      value: 'Pass only if the response inspects the supplied untracked implementation despite empty diffs, identifies construction of Assert\Collection as the primary responsibility, renames the collaborator to a product-based Factory with create(), and updates the consumer type, complete lower-camel-case dependency name and method call consistently. Reflection or metadata derivation must not justify retaining Generator. The response must preserve the existing constraint-building behavior and avoid introducing unrelated abstractions.'
+  metadata:
+    id: php-readable-code:untracked-object-factory-self-review
+    skill: php-readable-code
+    kind: apply
+
+- description: php-readable-code:scalar-generator-keeps-its-role
+  prompts:
+    - review-code
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    code: |
+      final class PublicUrlGenerator
+      {
+          public function generate(string $identifier): string
+          {
+              return '/app/items/' . rawurlencode($identifier);
+          }
+      }
+  assert:
+    - type: llm-rubric
+      value: 'Pass only if the review reports no naming violation for this scalar URL generator and leaves its class and method names unchanged. Fail if it applies the object-factory naming rule mechanically, bans Generator as a suffix, or proposes unrelated changes.'
+  metadata:
+    id: php-readable-code:scalar-generator-keeps-its-role
+    skill: php-readable-code
+    kind: review

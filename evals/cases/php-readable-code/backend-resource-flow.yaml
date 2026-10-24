@@ -1,0 +1,73 @@
+- description: php-readable-code:resource-dto-entity-factories
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    project_instructions: |
+      This existing backend has validated CreateInvoiceRequest and output-only
+      InvoiceDto types. Its Invoice entity receives an identifier during
+      persistence. HTTP input validation, response serialization and dependency
+      injection are already wired. Only synchronous resource creation is needed.
+    task: |
+      Choose names and contracts for the collaborators in this ordinary
+      resource-creation flow. Show the controller-to-service call, the service
+      orchestration, both representation-construction collaborators and the
+      repository signature. The service must return the assigned identifier
+      through the existing public DTO. Explain why the responsibilities lead
+      to the chosen suffixes. Reuse the existing HTTP infrastructure and do
+      not implement validation, database access or unsupported CRUD operations.
+  assert:
+    - type: contains
+      value: InvoiceController
+    - type: contains
+      value: InvoiceService
+    - type: contains
+      value: InvoiceRepository
+    - type: contains
+      value: InvoiceFactory
+    - type: contains
+      value: InvoiceDtoFactory
+    - type: regex
+      value: 'function\s+create\s*\(\s*CreateInvoiceRequest\s+\$\w+\s*\)\s*:\s*InvoiceDto\b'
+    - type: llm-rubric
+      value: 'Pass only if the controller passes the existing input DTO to InvoiceService::create(), the service coordinates InvoiceFactory::create(CreateInvoiceRequest): Invoice, InvoiceRepository::saveAndFlush(Invoice): Invoice (or the explicitly described equivalent persistence contract), then InvoiceDtoFactory::create() on the authoritative repository result. The service returns InvoiceDto, the repository contract uses entities rather than request/output DTOs, and construction stays in the two product-named factories with create(). Dependency names must match complete declared types. Fail for controller-owned entity mapping, inline DTO/entity construction in the service, alternate Mapper/Converter/Generator role names for those factories, speculative clients or unused CRUD operations.'
+  metadata:
+    id: php-readable-code:resource-dto-entity-factories
+    skill: php-readable-code
+    kind: apply
+
+- description: php-readable-code:remote-repository-keeps-entity-boundary
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-readable-code/SKILL.md
+    project_instructions: |
+      The existing application reads CatalogEntry resources from a remote API.
+      ReadCatalogEntryRequest contains the identifier; CatalogEntry is the
+      application's entity and CatalogEntryDto is its public output DTO.
+      The existing CatalogEntryClient::fetchEntry(string $id) returns the
+      transport-only CatalogEntryResponse. Existing composition keeps this
+      client and its transport DTO inside infrastructure.
+    task: |
+      Explain and sketch the service, repository and construction collaborators
+      for this read operation. Choose their role suffixes, show their contracts
+      and show which result each factory receives. Preserve the existing client
+      and describe where its transport response becomes an application entity.
+      Do not implement HTTP parsing or a new transport layer.
+  assert:
+    - type: contains
+      value: CatalogEntryService
+    - type: contains
+      value: CatalogEntryRepository
+    - type: contains
+      value: CatalogEntryFactory
+    - type: contains
+      value: CatalogEntryDtoFactory
+    - type: regex
+      value: 'function\s+find\s*\(\s*string\s+\$\w+\s*\)\s*:\s*CatalogEntry\b'
+    - type: llm-rubric
+      value: 'Pass only if CatalogEntryService::read() accepts ReadCatalogEntryRequest and returns CatalogEntryDto, calls the entity-facing repository with the identifier, then maps its CatalogEntry through CatalogEntryDtoFactory::create(). The infrastructure repository calls the existing CatalogEntryClient and delegates CatalogEntryResponse-to-CatalogEntry construction to an infrastructure CatalogEntryFactory::create(). Transport DTOs must not leak through the repository contract or into the service. The service must not bypass the repository to call the client. Fail for moving application DTO dependencies into the domain, speculative new transport layers or renaming the genuine client to a factory.'
+  metadata:
+    id: php-readable-code:remote-repository-keeps-entity-boundary
+    skill: php-readable-code
+    kind: apply

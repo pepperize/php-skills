@@ -1,0 +1,28 @@
+- description: php-agent-instructions:class-naming-self-review
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-agent-instructions/SKILL.md
+    project_instructions: file://../php-agent-instructions/assets/php-skill-self-review.md
+    task: |
+      Produce the marked PHP Skill Self Review block using the supplied
+      canonical template. Preserve its existing requirements and ensure its
+      naming review catches a task-created collaborator whose implementation
+      has the wrong role suffix, even when the file is still untracked and
+      git diff is empty. Keep the detailed PHP naming rules authoritative in
+      php-readable-code rather than copying them into another rule catalog.
+  assert:
+    - type: contains
+      value: php-readable-code
+    - type: contains
+      value: git status --short
+    - type: icontains
+      value: untracked
+    - type: icontains
+      value: primary responsibility
+    - type: llm-rubric
+      value: 'Pass only if the marked block routes class-role naming decisions through php-readable-code, requires identifying the primary responsibility before naming a class, and requires pre-final inspection of new or renamed classes and classes whose responsibility changed. It must include staged, unstaged and task-created untracked files, infer the role from implementation rather than accepting the suffix, correct affected code/tests/docs, and briefly report newly introduced collaborators role, returned product if any, and naming decision. Existing template requirements must be preserved.'
+  metadata:
+    id: php-agent-instructions:class-naming-self-review
+    skill: php-agent-instructions
+    kind: apply
