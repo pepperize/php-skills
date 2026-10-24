@@ -41,9 +41,9 @@ Never log plaintext passwords, password hashes, reset or verification bearer tok
 
 Throw exceptions where the problem originates.
 
-Avoid helper or factory methods that throw internally when the caller is the place that understands the failed invariant or boundary condition.
+A focused helper may throw a specific exception for a failure it detects and owns. For example, a request-construction helper may report a missing field while the middleware decides the HTTP response. Keep response construction and policy logging out of that helper. Avoid moving a throw into a helper that lacks the information or responsibility to understand the failed condition.
 
-Do not add application exceptions only to translate malformed HTTP requests into HTTP responses. Throw or map API-boundary client errors in the controller or API adapter.
+Do not add application or domain exceptions only to translate malformed HTTP requests into HTTP responses. Keep exceptions for raw request-construction failures in the web/infrastructure input adapter and map them through the established HTTP error boundary. A result object remains appropriate when the contract requires accumulated errors or partial values; exceptions are not mandatory for every failed operation.
 
 ## Repository Conflict Exceptions
 
@@ -56,5 +56,6 @@ Do not add application exceptions only to translate malformed HTTP requests into
 
 - Do not catch broad `Throwable` in orchestration code just to log and convert it into `null`, an empty array, or a generic failure result.
 - Only catch exceptions when the collaborator documents or clearly owns a recoverable failure case that the caller can handle meaningfully.
+- Scope a catch to the operation whose failure it translates. In particular, keep constraint validation and downstream request handling outside a catch intended for DTO construction, so the same exception type raised later is not reported as a failure of the submitted body.
 - If a method only filters or maps already-loaded data, "no matches" should be a normal empty result, not an exception path.
 - Do not branch on human-readable exception or HTTP error message text for control flow. Classify external API failures using stable contract signals such as HTTP status, documented machine-readable error codes, typed exceptions, or structured response fields. If a status code has multiple business meanings, clarify or improve the upstream contract instead of matching message text.

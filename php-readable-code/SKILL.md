@@ -13,6 +13,22 @@ description: Use when writing, refactoring, or reviewing PHP production code aro
 - Avoid passing non-trivial method calls directly as arguments when an intermediate variable would clarify intent. Name semantically important intermediate results.
 - Prefer simple, common words that non-native speakers can read without looking them up.
 
+## Orchestration And Local Operations
+
+Keep orchestration methods at one level of abstraction: the caller should reveal the sequence of meaningful operations without coordinating their field checks, branching and construction details. Extract a complete operation into a purpose-named method, such as `createRequestDto(...)`, rather than wrapping individual expressions in predicates that leave the caller doing the same detailed work.
+
+Prefer a private method when the operation belongs to one owner. Introduce a separate collaborator when its independent responsibility, actual reuse, complexity or composition benefits justify that boundary. Returning an object does not by itself require a factory class. Keep ordinary expressions inline when extracting them would add indirection without clarifying the operation.
+
+For input-boundary construction and failure handling, follow `php-request-validation` and `php-logging-exceptions`; local extraction must preserve the accepted input and error contracts.
+
+## Imports And Aliases
+
+- Import classes using their full namespace and refer to their actual short names.
+- Do not rename classes or alias namespaces for brevity, convenience, or framework convention. Avoid mappings such as `Constraints as Assert` and `Mapping as ORM`.
+- When short names collide, prefer fully qualified class references at the affected usages.
+- Aliasing is a last resort for actual collisions where fully qualified references materially reduce readability. Use aliases sparingly and derive their names from the original namespace.
+- During self-review, remove every alias that does not meet these conditions.
+
 ## Backend Resource Flow
 
 For standard backend resource operations, start with `Controller -> Service -> Repository`, with an optional technical `Client` behind the repository. Derive collaborator names from their responsibilities in this flow:
@@ -93,7 +109,9 @@ Business decisions about permissions, ownership, uniqueness, and lifecycle trans
 
 Before choosing a class name, identify its primary responsibility. When that responsibility is constructing and returning an object or object graph, name the class after its product plus `Factory` and name the main method `create(...)`.
 
-Reflection, cloning, metadata interpretation and nested construction are implementation details; they do not justify using `Generator` for an object factory. For example, a collaborator that derives a Symfony `Assert\Collection` from DTO metadata is a `DtoConstraintsFactory::create(...)`.
+This names a justified collaborator; it does not require a new class for every construction operation. Use the local-operation guidance above when construction belongs in a private method.
+
+Reflection, cloning, metadata interpretation and nested construction are implementation details; they do not justify using `Generator` for an object factory. For example, a collaborator that derives a Symfony `Collection` from DTO metadata is a `DtoConstraintsFactory::create(...)`.
 
 Returning an object alone does not make a class a factory: retrieval, validation and other operations retain their own roles. Preserve explicit user/project naming requirements and framework-required contracts.
 
@@ -215,5 +233,6 @@ Before finalizing PHP code changes:
 - Accessors may use noun names. Predicates should use `is`, `has`, `can`, `should`, or similar.
 - Action, operation, formatting, mapping, and helper methods must use verb phrases.
 - Remove helper methods that only hide one obvious call unless they enforce a real invariant or improve a repeated concept.
+- Read each changed orchestration method as a sequence of meaningful operations. Extract cohesive details at the operation boundary; do not replace them with many tiny wrappers or require another class without a concrete benefit.
 - Check any new defensive branch against known domain/API assumptions. If the user or project states the value cannot occur, do not add handling for it without asking.
 - Trace changed input paths and remove downstream field revalidation within the requested scope. Verify input DTO attributes run in middleware, and regex-based fields have one regex, preferably shared with HTML5 `pattern`.

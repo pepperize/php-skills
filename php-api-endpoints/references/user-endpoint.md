@@ -78,14 +78,14 @@ Each declared class belongs in its own file. `Example` is a replacement namespac
 
 ## Input And Validation
 
-Preserve the baseline's collaborator split even when adapting it to fewer fields:
+This example uses the following collaborator split to collect raw-input errors across fields and share typed errors with constraint validation:
 
 - `CreateUserRequestHydrationResultFactory` checks raw shape and types, performs permitted normalization once, and constructs the input DTO.
 - `CreateUserRequestValidator` invokes Symfony Validator and maps violations to typed `CreateUserRequestError` values.
 - `CreateUserRequestValidationMiddleware` coordinates those collaborators, short-circuits errors through `UserResponseFactory`, and attaches the accepted DTO for dispatch.
 - `UserResponseFactory` maps typed errors to the HTTP Problem Details envelope and encoded pointers.
 
-The middleware does not inline hydration, constraint execution, violation mapping or error serialization. Adapt the request fields without collapsing these responsibilities. The immutable input DTO is also the service parameter; `UserDto` is a separate output type.
+Here the middleware coordinates the existing collaborators without inlining their implementations. These classes are one composition, not a required minimum for every endpoint. For simple hydration owned by one middleware, use a cohesive private construction method as shown in [local DTO construction](../../php-request-validation/references/local-dto-construction.md). Preserve the target contract, including raw-type checks, normalization, extra fields and error accumulation, whichever composition is chosen. The immutable input DTO is also the service parameter; `UserDto` is a separate output type.
 
 This two-field illustration preserves the baseline's behavior for those fields: trim the name, trim and lowercase the email, ignore additional fields, and distinguish missing, null and wrong-type values. These are contract choices, not universal normalization or unknown-field policies; preserve the target project's actual contract. Password, locale and legal-document fields are omitted from this generic directory example.
 
@@ -96,21 +96,24 @@ declare(strict_types=1);
 
 namespace Example\App\Api\User;
 
-use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Constraints\Email;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Sequentially;
 
 final readonly class CreateUserRequest
 {
     public function __construct(
-        #[Assert\Sequentially([
-            new Assert\NotBlank(payload: 'REQUIRED_FIELD'),
-            new Assert\Length(max: 100, payload: 'TOO_LONG'),
+        #[Sequentially([
+            new NotBlank(payload: 'REQUIRED_FIELD'),
+            new Length(max: 100, payload: 'TOO_LONG'),
         ])]
         public string $name,
-        #[Assert\Sequentially([
-            new Assert\NotBlank(payload: 'REQUIRED_FIELD'),
-            new Assert\Length(max: 254, payload: 'TOO_LONG'),
-            new Assert\Email(
-                mode: Assert\Email::VALIDATION_MODE_HTML5_ALLOW_NO_TLD,
+        #[Sequentially([
+            new NotBlank(payload: 'REQUIRED_FIELD'),
+            new Length(max: 254, payload: 'TOO_LONG'),
+            new Email(
+                mode: Email::VALIDATION_MODE_HTML5_ALLOW_NO_TLD,
                 payload: 'INVALID_EMAIL',
             ),
         ])]
@@ -325,33 +328,39 @@ namespace Example\Domain\Account;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
-use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\Column;
+use Doctrine\ORM\Mapping\CustomIdGenerator;
+use Doctrine\ORM\Mapping\Entity;
+use Doctrine\ORM\Mapping\GeneratedValue;
+use Doctrine\ORM\Mapping\Id;
+use Doctrine\ORM\Mapping\Table;
+use Doctrine\ORM\Mapping\UniqueConstraint;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 
-#[ORM\Entity]
-#[ORM\Table(name: 'users')]
-#[ORM\UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
+#[Entity]
+#[Table(name: 'users')]
+#[UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
 final readonly class User
 {
-    #[ORM\Id]
-    #[ORM\Column(type: Types::STRING, length: 36)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
+    #[Id]
+    #[Column(type: Types::STRING, length: 36)]
+    #[GeneratedValue(strategy: 'CUSTOM')]
+    #[CustomIdGenerator(class: UuidGenerator::class)]
     public string $id;
 
     public function __construct(
-        #[ORM\Column(type: Types::STRING, length: 100)]
+        #[Column(type: Types::STRING, length: 100)]
         public string $name,
-        #[ORM\Column(type: Types::STRING, length: 254)]
+        #[Column(type: Types::STRING, length: 254)]
         public string $email,
-        #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
+        #[Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
         public DateTimeImmutable $createdAt,
     ) {
     }
 }
 ```
 
-If an entity has embedded domain values, map those existing values with `#[ORM\Embedded]` / `#[ORM\Embeddable]`, as with Zeitenlogger's `LegalAcknowledgement`. Do not invent an embedded value solely to demonstrate the attribute. Mapping metadata is allowed on domain models; entity managers, DBAL connections and persistence operations remain in infrastructure. Schema changes still use the existing migration system.
+If an entity has embedded domain values, map those existing values with `#[Embedded]` / `#[Embeddable]`, as with Zeitenlogger's `LegalAcknowledgement`. Do not invent an embedded value solely to demonstrate the attribute. Mapping metadata is allowed on domain models; entity managers, DBAL connections and persistence operations remain in infrastructure. Schema changes still use the existing migration system.
 
 ```php
 <?php

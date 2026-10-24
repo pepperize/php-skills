@@ -1,0 +1,34 @@
+- description: php-request-validation:cohesive-local-construction
+  prompts:
+    - apply-skill
+  vars:
+    skill: file://../php-request-validation/SKILL.md
+    additional_skill: file://../php-readable-code/SKILL.md
+    project_instructions: |
+      This PHP 8.2 PSR-15 endpoint accepts JSON objects containing only a
+      required string token. Reject unknown fields and null/wrong-type tokens;
+      preserve the submitted value without trimming. The earlier protection
+      middleware supplies stdClass or rejects malformed/wrong-shaped input.
+      VerifyEmailRequest is an existing immutable DTO with token-format Symfony
+      attributes. Existing RequestValidator::validate(object) executes those
+      constraints and returns typed RequestError values. The existing responder
+      owns 422 Problem Details and pointer encoding. A web-adapter-owned
+      InvalidRequestBodyException carries path segments and a safe diagnostic.
+      The contract permits returning the first raw-input error. No caller needs
+      partial values or an accumulated hydration result. Downstream processing
+      can raise the same exception type for a different external input.
+    task: |
+      Show a readable process() method and its local DTO-construction operation
+      for the validation middleware. Keep input checks at this boundary and use
+      the existing validator, responder and exception. Explain missing, null,
+      integer and extra-field bodies, a bad token format, a valid request, and
+      the downstream exception. Avoid adding collaborators or generic machinery.
+  assert:
+    - type: contains
+      value: withAttribute(
+    - type: llm-rubric
+      value: 'Pass only if process() reveals DTO construction, constraint validation and dispatch, with raw checks and construction together in one meaningful private operation returning VerifyEmailRequest directly. Require presence checks distinguishing missing from explicit null, strict string checks before construction, rejection of extra fields, and no normalization. Catch the specific construction failure only around the construction call and map it through the existing responder; validation and downstream handling must be outside that catch. Invalid input short-circuits before dispatch and valid input is delivered as a class-keyed attribute. The downstream exception must propagate. Fail for a new factory/result wrapper/registry, merely extracting hasToken() while leaving detailed construction logic in process(), catching Throwable or TypeError as client validation, or repeating field checks downstream.'
+  metadata:
+    id: php-request-validation:cohesive-local-construction
+    skill: php-request-validation
+    kind: apply
