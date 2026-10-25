@@ -66,13 +66,13 @@
     code: |
       final class DoctrineProjectRepository implements ProjectRepository
       {
-          public function __construct(private EntityManagerInterface $entityManagerInterface) {}
+          public function __construct(private EntityManagerInterface $entityManager) {}
 
           public function saveAndFlush(Project $project): Project
           {
               try {
-                  $this->entityManagerInterface->persist($project);
-                  $this->entityManagerInterface->flush();
+                  $this->entityManager->persist($project);
+                  $this->entityManager->flush();
               } catch (\Throwable $exception) {
                   throw new ProjectAlreadyExistsException($exception->getMessage());
               }

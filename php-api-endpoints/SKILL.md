@@ -21,7 +21,7 @@ Inspect the endpoint contract and project instructions first. Do not infer REST 
 - Keep the controller thin: consume typed input, call the resource service, translate application failures into the existing HTTP error contract, and delegate response creation. Controllers do not query repositories or map domain entities.
 - Let the resource service coordinate business operations, factories and repository access. Use a focused `UserFactory::create(CreateUserRequest): User` for input DTO-to-entity construction and `UserDtoFactory::create(User): UserDto` for output construction from the authoritative persisted entity. Return that public DTO; keep construction in the factories. Services do not choose HTTP statuses or headers, generate URLs, or serialize JSON.
 - Let `UserResponseFactory` or the established responder own HTTP output. Completed creation returns `201`, the created member's canonical `Location`, and the DTO representation including its identifier and public server-assigned values. Explicitly select output fields and omit secrets; do not serialize the entity or submitted request wholesale.
-- Follow `php-readable-code` for method and dependency names. Injected dependencies use the complete declared short type in lower camel case, including suffixes such as `Interface`, `Repository` and `Factory`.
+- Follow `php-readable-code` for method and dependency names. Injected dependencies use the declared short type in lower camel case after dropping a trailing `Interface`, while preserving role suffixes such as `Repository` and `Factory`.
 
 ## Persistence And Architecture
 

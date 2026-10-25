@@ -84,7 +84,7 @@ final class RegistrationController
         private RegistrationViewService $registrationViewService,
         private RegistrationPageRenderer $registrationPageRenderer,
         private RegistrationService $registrationService,
-        private RouteParserInterface $routeParserInterface,
+        private RouteParserInterface $routeParser,
     ) {
     }
 
@@ -125,7 +125,7 @@ final class RegistrationController
         }
 
         $this->registrationService->register($registrationValues);
-        $location = $this->routeParserInterface->urlFor(
+        $location = $this->routeParser->urlFor(
             'registration.complete',
             ['locale' => $selectedLocale->value],
         );

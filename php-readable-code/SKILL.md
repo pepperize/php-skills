@@ -46,9 +46,11 @@ Read the [worked resource flow and naming examples](../php-api-endpoints/referen
 
 ## Dependency Names
 
-Name each injected dependency after its complete declared short type, converted to lower camel case. Preserve role suffixes such as `Repository`, `Factory`, `Generator`, `Service`, `Client`, and `Interface`; they distinguish the collaborator from the values it returns.
+Name each injected dependency after its declared short type, dropping a trailing `Interface` before converting it to lower camel case. Apply the same name to the constructor parameter and property. Preserve other role suffixes such as `Repository`, `Factory`, `Generator`, `Service`, and `Client`; they distinguish the collaborator from the values it returns. Keep declared type names unchanged.
 
 ```php
+private MailerInterface $mailer;
+private UserRepositoryInterface $userRepository;
 private PublicUrlGenerator $publicUrlGenerator;
 private ApartmentLayoutRepository $apartmentLayoutRepository;
 private LocalizedApartmentLayoutFactory $localizedApartmentLayoutFactory;
@@ -225,7 +227,7 @@ Before finalizing PHP code changes:
 - For standard resource operations, trace controller DTO input through the service, entity factory, entity repository and output DTO factory. Verify the role suffixes and explain any concrete departure from this flow.
 - Briefly report the role, product and naming decision for newly introduced collaborators.
 - For a non-trivial implementation or refactor, also use `php-solid-review` to review the resulting diff against only the engineering principles that materially apply. Fix meaningful findings before finalizing; do not enumerate principles that have no finding.
-- Review every new or renamed injected dependency and use the complete declared short type in lower camel case.
+- Review every new or renamed injected dependency and use its declared short type in lower camel case after dropping a trailing `Interface`; preserve all other suffixes.
 - Identify each changed endpoint's contract before reviewing naming and responses. For REST resource endpoints, verify plural domain resource paths, resource-named controllers and application services, CRUD service operations, HTTP/route-aligned handlers, and operation/resource-named request DTOs. Prefer separate request and response DTOs; verify any shared DTO is intentional. Do not carry traditional form `Values` naming into a REST API or force REST naming onto an HTML workflow.
 - For a completed REST resource-creation POST, verify `create()` returns the public DTO mapped from the persisted entity, the controller delegates that DTO to the response collaborator, and the response has `201`, the correct member `Location`, and a body containing its identifier without secrets. For server-rendered pages and traditional HTML form actions, verify their HTML rendering/error/redirect contract instead.
 - Review every newly added or renamed method.

@@ -232,14 +232,14 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class CreateUserRequestValidator
 {
-    public function __construct(private ValidatorInterface $validatorInterface)
+    public function __construct(private ValidatorInterface $validator)
     {
     }
 
     /** @return list<CreateUserRequestError> */
     public function validate(CreateUserRequest $createUserRequest): array
     {
-        $violations = $this->validatorInterface->validate($createUserRequest);
+        $violations = $this->validator->validate($createUserRequest);
         $errors = [];
 
         foreach ($violations as $violation) {
@@ -409,17 +409,17 @@ use Example\Domain\Shared\EntityExistsException;
 
 final class DoctrineUserRepository implements UserRepository
 {
-    public function __construct(private EntityManagerInterface $entityManagerInterface)
+    public function __construct(private EntityManagerInterface $entityManager)
     {
     }
 
     public function saveAndFlush(User $user): User
     {
         try {
-            $this->entityManagerInterface->persist($user);
-            $this->entityManagerInterface->flush();
+            $this->entityManager->persist($user);
+            $this->entityManager->flush();
         } catch (UniqueConstraintViolationException $exception) {
-            $existingId = $this->entityManagerInterface->getConnection()->createQueryBuilder()
+            $existingId = $this->entityManager->getConnection()->createQueryBuilder()
                 ->select('id')
                 ->from('users')
                 ->where('email = :email')
@@ -638,13 +638,13 @@ class UserResponseFactory
 {
     public function __construct(
         private JsonResponseFactory $jsonResponseFactory,
-        private RouteParserInterface $routeParserInterface,
+        private RouteParserInterface $routeParser,
     ) {
     }
 
     public function create(UserDto $userDto): ResponseInterface
     {
-        $location = $this->routeParserInterface->urlFor('users.read', ['userId' => $userDto->id]);
+        $location = $this->routeParser->urlFor('users.read', ['userId' => $userDto->id]);
         $response = $this->jsonResponseFactory->create($userDto, 201, 'application/json');
 
         return $response->withHeader('Location', $location);

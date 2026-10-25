@@ -20,11 +20,11 @@
 
       final class DtoConstraintGenerator
       {
-          public function __construct(private ValidatorInterface $validatorInterface) {}
+          public function __construct(private ValidatorInterface $validator) {}
 
           public function generate(string $dtoClass): Assert\Collection
           {
-              $classMetadata = $this->validatorInterface->getMetadataFor($dtoClass);
+              $classMetadata = $this->validator->getMetadataFor($dtoClass);
               $fields = $this->collectFields($dtoClass, $classMetadata);
 
               return new Assert\Collection(fields: $fields);
@@ -51,7 +51,7 @@
     - type: icontains
       value: untracked
     - type: llm-rubric
-      value: 'Pass only if the response inspects the supplied untracked implementation despite empty diffs, identifies construction of Assert\Collection as the primary responsibility, renames the collaborator to a product-based Factory with create(), and updates the consumer type, complete lower-camel-case dependency name and method call consistently. Reflection or metadata derivation must not justify retaining Generator. The response must preserve the existing constraint-building behavior and avoid introducing unrelated abstractions.'
+      value: 'Pass only if the response inspects the supplied untracked implementation despite empty diffs, identifies construction of Assert\Collection as the primary responsibility, renames the collaborator to a product-based Factory with create(), and updates the consumer type, type-derived lower-camel-case dependency name (dropping a trailing Interface) and method call consistently. Reflection or metadata derivation must not justify retaining Generator. The response must preserve the existing constraint-building behavior and avoid introducing unrelated abstractions.'
   metadata:
     id: php-readable-code:untracked-object-factory-self-review
     skill: php-readable-code
