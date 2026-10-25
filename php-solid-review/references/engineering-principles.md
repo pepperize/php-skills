@@ -150,11 +150,11 @@ A sales report is not a PDF document. The exporter inherits the document’s who
 ```php
 final class SalesReportExporter
 {
-    public function __construct(private PdfRenderer $renderer) {}
+    public function __construct(private PdfRenderer $pdfRenderer) {}
 
     public function export(SalesReport $report): string
     {
-        return $this->renderer->render($report->summary());
+        return $this->pdfRenderer->render($report->summary());
     }
 }
 ```
@@ -184,7 +184,7 @@ Do not extract one-line wrappers or treat ordinary language primitives and value
 ```php
 public function sendReminders(DateTimeImmutable $today): void
 {
-    foreach ($this->orders->findOpen() as $order) {
+    foreach ($this->orderRepository->findBy(['status' => 'open']) as $order) {
         if ($order->dueDate() < $today && !$order->isDisputed()) {
             $this->mailer->send($order->customerEmail(), 'Payment overdue');
         }
@@ -199,7 +199,7 @@ I/O orchestration and the overdue-selection rule are interleaved, so testing the
 ```php
 public function sendReminders(DateTimeImmutable $today): void
 {
-    $openOrders = $this->orders->findOpen();
+    $openOrders = $this->orderRepository->findBy(['status' => 'open']);
     $overdueOrders = $this->selectOverdueOrders($openOrders, $today);
     $this->reminders->sendFor($overdueOrders);
 }
@@ -215,7 +215,7 @@ private function selectOverdueOrders(array $orders, DateTimeImmutable $today): a
 }
 ```
 
-The integration method shows the flow while the selection operation holds the decision logic without repository or mail dependencies.
+In this illustration, the repository selects open orders with `findBy(['status' => 'open'])`. The integration method shows the flow while the selection operation holds the decision logic without repository or mail dependencies.
 
 ## Single Level of Abstraction
 
@@ -240,23 +240,23 @@ Do not extract every expression. A helper should name a meaningful lower-level o
 ```php
 public function publish(Article $article): void
 {
-    $this->validator->validate($article);
+    $this->articlePublicationPolicy->ensurePublishable($article);
     $payload = json_encode([
         'id' => (string) $article->id(),
-        'body' => trim(strip_tags($article->body())),
+        'body' => $article->body(),
     ], JSON_THROW_ON_ERROR);
     $this->client->post('/articles', $payload);
 }
 ```
 
-Use-case orchestration is mixed with transport mapping and text normalization details.
+Use-case orchestration is mixed with transport mapping and JSON encoding details.
 
 **Positive example**
 
 ```php
 public function publish(Article $article): void
 {
-    $this->validator->validate($article);
+    $this->articlePublicationPolicy->ensurePublishable($article);
     $payload = $this->createPayload($article);
     $this->client->post('/articles', $payload);
 }
@@ -265,12 +265,12 @@ private function createPayload(Article $article): string
 {
     return json_encode([
         'id' => (string) $article->id(),
-        'body' => trim(strip_tags($article->body())),
+        'body' => $article->body(),
     ], JSON_THROW_ON_ERROR);
 }
 ```
 
-The public method now stays at workflow level, while the named helper contains the transport-level detail.
+The public method now stays at workflow level, while the named helper contains the transport-level detail. Input fields are already validated and normalized at the input boundary; the publication policy checks business state, and payload construction preserves the accepted body.
 
 ## SRP — Single Responsibility Principle
 
@@ -313,21 +313,21 @@ Validation, storage, document rendering, and delivery change for different reaso
 final class InvoiceIssuer
 {
     public function __construct(
-        private InvoiceValidator $validator,
-        private InvoiceRepository $invoices,
-        private InvoiceIssuedPublisher $events,
+        private InvoiceIssuancePolicy $invoiceIssuancePolicy,
+        private InvoiceRepository $invoiceRepository,
+        private InvoiceIssuedPublisher $invoiceIssuedPublisher,
     ) {}
 
     public function issue(Invoice $invoice): void
     {
-        $this->validator->validate($invoice);
-        $this->invoices->save($invoice);
-        $this->events->publish(new InvoiceIssued($invoice->id()));
+        $this->invoiceIssuancePolicy->ensureIssuable($invoice);
+        $this->invoiceRepository->save($invoice);
+        $this->invoiceIssuedPublisher->publish(new InvoiceIssued($invoice->id()));
     }
 }
 ```
 
-The class owns issuance orchestration, while validation, persistence, and post-issuance reactions have focused boundaries.
+The class owns issuance orchestration, while business-state eligibility, persistence, and post-issuance reactions have focused boundaries. Field validation has already run at the input boundary; the issuance policy does not repeat it.
 
 ## SoC — Separation of Concerns
 
@@ -350,7 +350,7 @@ Do not impose layers or folders that the project does not use. Separate concerns
 **Negative example**
 
 ```php
-public function approve(ServerRequestInterface $request): ResponseInterface
+public function postLoanApproval(ServerRequestInterface $request): ResponseInterface
 {
     $row = $this->pdo->query('SELECT * FROM loans WHERE id = 42')->fetch();
     $approved = $row['score'] >= 700 && $row['debt'] < 10_000;
@@ -364,16 +364,16 @@ Transport, storage, lending policy, and rendering are entangled in one boundary 
 **Positive example**
 
 ```php
-public function approve(ServerRequestInterface $request): ResponseInterface
-{
-    $loanId = LoanId::fromString($request->getAttribute('id'));
-    $decision = $this->approveLoan->execute($loanId);
+public function postLoanApproval(
+    ApproveLoanRequest $approveLoanRequest,
+): ResponseInterface {
+    $decision = $this->loanApprovalService->approve($approveLoanRequest);
 
-    return $this->responses->forLoanDecision($decision);
+    return $this->loanDecisionResponseFactory->create($decision);
 }
 ```
 
-The controller handles HTTP adaptation while application behavior and response presentation have distinct owners.
+Input middleware hydrates and validates `ApproveLoanRequest` before invoking the controller. The controller passes that same DTO to the application service and delegates HTTP output to the response factory; application behavior and response presentation have distinct owners.
 
 ## ISP — Interface Segregation Principle
 
@@ -473,11 +473,11 @@ interface PaymentGateway
 
 final class Checkout
 {
-    public function __construct(private PaymentGateway $payments) {}
+    public function __construct(private PaymentGateway $paymentGateway) {}
 
     public function pay(Order $order): PaymentId
     {
-        return $this->payments->charge($order->total());
+        return $this->paymentGateway->charge($order->total());
     }
 }
 ```

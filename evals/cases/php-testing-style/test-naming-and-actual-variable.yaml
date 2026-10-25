@@ -3,6 +3,7 @@
     - review-code
   vars:
     skill: file://../php-testing-style/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
     code: |
       use PHPUnit\Framework\Attributes\Test;
       use PHPUnit\Framework\TestCase;

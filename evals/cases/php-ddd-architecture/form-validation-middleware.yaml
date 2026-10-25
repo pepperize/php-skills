@@ -3,6 +3,8 @@
     - apply-skill
   vars:
     skill: file://../php-ddd-architecture/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
     project_instructions: |
       This project uses Domain-Driven Design. Frontend HTTP code lives under
       App/Frontend and the application uses Slim with PSR-15 middleware.
@@ -76,6 +78,8 @@
     - apply-skill
   vars:
     skill: file://../php-ddd-architecture/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
     project_instructions: |
       This project uses Domain-Driven Design and Slim with PSR-15 middleware.
       Contact submissions must work as ordinary HTML posts without JavaScript.

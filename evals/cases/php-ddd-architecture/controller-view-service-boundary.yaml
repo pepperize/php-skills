@@ -3,6 +3,8 @@
     - apply-skill
   vars:
     skill: file://../php-ddd-architecture/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     project_instructions: |
       This project uses Domain-Driven Design. Domain code lives under Domain,
       frontend HTTP code under App/Frontend, and technical adapters under Infrastructure.

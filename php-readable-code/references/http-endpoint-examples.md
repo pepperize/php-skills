@@ -1,6 +1,6 @@
 # HTTP Endpoint Contracts And Examples
 
-Select the convention by the endpoint contract. A POST method, JSON encoding, JavaScript submission, or server-rendered initial form alone does not identify a REST resource operation. The examples assume existing services, DTOs, validated controller-argument wiring, renderers, and response infrastructure; adapt them to the project rather than installing these collaborators solely to copy a snippet.
+Apply [Endpoint Contracts](../../php-api-endpoints/SKILL.md#endpoint-contracts), [REST API Naming](../SKILL.md#rest-api-naming), and [Traditional HTML Submissions](../../php-request-validation/SKILL.md#traditional-html-submissions). The examples below illustrate those owners using existing services, DTOs, validated argument wiring, renderers, and response infrastructure; adapt them rather than installing collaborators solely to copy a snippet.
 
 | Contract | Naming | Successful response |
 | --- | --- | --- |
@@ -15,9 +15,7 @@ CRUD names apply to supported REST resource service operations. Repositories fol
 
 Read the [worked User endpoint](../../php-api-endpoints/references/user-endpoint.md) before implementing this contract. It owns the complete controller/service/DTO/repository example and validation/composition connections.
 
-The collection requires `201 Created`, `Location`, and a public response body for completed REST creation. This is the agreed coding convention; HTTP itself does not mandate a representation body. `UserService::create(CreateUserRequest): UserDto` accepts the same validated input, owns creation and persistence, and maps the persisted `User` through `UserDtoFactory` to an output-only DTO with its assigned identifier and authoritative public values.
-
-The controller delegates that DTO to `UserResponseFactory`. The response factory owns JSON serialization and generates the canonical member URL with the existing `RouteParserInterface`, including the configured base path. Keep HTTP statuses, headers, URLs and serialization out of the service; do not return a domain entity for the controller to map.
+Under the [HTTP Response Contract](../../php-api-endpoints/SKILL.md#http-response-contract), this controller delegates the service's public `UserDto` to `UserResponseFactory`. The full User reference shows persistence, output mapping, named-route URL generation, and response serialization.
 
 ```php
 <?php
@@ -57,7 +55,7 @@ Content-Type: application/json
 {"id":"7d31c979-f3f0-4ef3-9d78-f9e4c0519248","name":"Alex","email":"alex@example.com","createdAt":"2026-10-18T12:00:00+00:00"}
 ```
 
-An already-created User may still await email verification; that lifecycle state does not make creation asynchronous. A deliberately asynchronous endpoint may return `202` while processing remains incomplete. An action POST that creates no resource follows its own documented response contract. Surface an explicitly required compatibility conflict rather than silently treating an older generic success/pending response as the conventional completed-creation response.
+For pending verification, asynchronous processing, action POSTs, and compatibility exceptions, use the owning [HTTP Response Contract](../../php-api-endpoints/SKILL.md#http-response-contract).
 
 ## Server-rendered Page And Traditional HTML Form Action
 

@@ -65,7 +65,7 @@ final class LegalNavigationViewModelFactory
 final class PrivacyPolicyController
 {
     public function __construct(
-        private PhpRenderer $templates,
+        private PhpRenderer $phpRenderer,
         private PrivacyPolicyViewService $privacyPolicyViewService,
     ) {
     }
@@ -76,7 +76,7 @@ final class PrivacyPolicyController
     ): ResponseInterface {
         $selectedLocale = Locale::from($locale);
         $page = $this->privacyPolicyViewService->fetchPage($selectedLocale);
-        $renderedResponse = $this->templates->render(
+        $renderedResponse = $this->phpRenderer->render(
             $response,
             'privacy-policy.php',
             ['page' => $page],
@@ -131,8 +131,7 @@ Mock `RouteParserInterface` at the frontend presentation collaborator that owns 
 
 ```php
 $routeParser = $this->createMock(RouteParserInterface::class);
-$routeParser->expects(self::exactly(2))
-    ->method('urlFor')
+$routeParser->method('urlFor')
     ->willReturnMap([
         ['imprint', ['locale' => 'en'], '/en/imprint'],
         ['privacy-policy', ['locale' => 'en'], '/en/privacy-policy'],

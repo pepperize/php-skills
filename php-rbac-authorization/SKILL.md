@@ -63,7 +63,7 @@ final readonly class RequiresPermission
 Avoid authorization that must be reconstructed from the class declaration:
 
 ```php
-#[RequiresPermission(Permission::OwnerAdministrationRead)]
+#[RequiresPermission(Permission::OwnerRead)]
 final class OwnerController
 {
     public function getOwner(): ResponseInterface
@@ -71,7 +71,7 @@ final class OwnerController
         // ...
     }
 
-    #[RequiresPermission(Permission::OwnerAdministrationWrite)]
+    #[RequiresPermission(Permission::OwnerWrite)]
     public function postOwner(): ResponseInterface
     {
         // This implicitly requires both read and write permissions.
@@ -84,13 +84,13 @@ Keep each route handler's permission local and explicit:
 ```php
 final class OwnerController
 {
-    #[RequiresPermission(Permission::OwnerAdministrationRead)]
+    #[RequiresPermission(Permission::OwnerRead)]
     public function getOwner(): ResponseInterface
     {
         // ...
     }
 
-    #[RequiresPermission(Permission::OwnerAdministrationWrite)]
+    #[RequiresPermission(Permission::OwnerWrite)]
     public function postOwner(): ResponseInterface
     {
         // ...

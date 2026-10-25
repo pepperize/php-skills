@@ -30,7 +30,7 @@ The exact session and adapter classes may follow the application. Preserve the o
 
 ## Password Policy And Storage
 
-Enforce new-password input rules only in the input layer. For typical PHP HTTP applications, put constraints on the registration, password-change, and password-reset DTOs and run them in route middleware using `php-request-validation`. Keep blocklist checks in that input-validation flow as well. Services and hashers receive validated passwords and must not repeat length, format, or composition checks. CLI and other external entry points validate at their own input boundaries. When an explicitly required composition policy needs regex, use one full-value expression, preferably shared with HTML5 `pattern`.
+Enforce the new-password policy below, including blocklist checks, at the input boundary under [Validation Ownership](../php-request-validation/SKILL.md#validation-ownership). Hashers and services consume validated input. An explicitly required composition regex follows [One Regex Per Field](../php-request-validation/SKILL.md#one-regex-per-field).
 
 - For new passwords at registration, password change, and password reset, require at least 15 Unicode characters when authentication is password-only.
 - Allow at least 64 Unicode characters and set a documented, bounded upper limit to protect memory and hashing work. Count characters for the user-facing policy; technical byte limits must accommodate every supported character within the advertised character limit.
@@ -103,7 +103,7 @@ final readonly class LoginAttemptKeyFactory
     {
     }
 
-    public function forAccount(string $normalizedLogin): string
+    public function create(string $normalizedLogin): string
     {
         return hash_hmac('sha256', $normalizedLogin, $this->limiterKey);
     }

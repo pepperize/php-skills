@@ -3,6 +3,7 @@
     - apply-skill
   vars:
     skill: file://../php-ddd-architecture/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     project_instructions: |
       This project uses Domain-Driven Design, Slim 4, the PHP-DI Slim bridge,
       and PHP-DI's mutable Container.

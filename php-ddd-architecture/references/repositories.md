@@ -202,22 +202,22 @@ final class PrivacyPolicyViewService
 {
     public function __construct(
         private LegalOperatorRepository $legalOperatorRepository,
-        private ForwardingRecipientRepository $recipientRepository,
-        private PublicEmailProtector $emailProtector,
-        private SiteHeaderViewModelFactory $siteHeaderFactory,
-        private LegalNavigationViewModelFactory $legalNavigationFactory,
+        private ForwardingRecipientRepository $forwardingRecipientRepository,
+        private PublicEmailProtector $publicEmailProtector,
+        private SiteHeaderViewModelFactory $siteHeaderViewModelFactory,
+        private LegalNavigationViewModelFactory $legalNavigationViewModelFactory,
     ) {
     }
 
     public function fetchPage(Locale $locale): PrivacyPolicyPageViewModel
     {
         $metadata = new PageMetadataViewModel($locale, 'Privacy policy');
-        $header = $this->siteHeaderFactory->createForLegalPage(
+        $header = $this->siteHeaderViewModelFactory->createForLegalPage(
             $locale,
             'privacy-policy',
         );
         $content = $this->fetchContent();
-        $legalNavigation = $this->legalNavigationFactory->create(
+        $legalNavigation = $this->legalNavigationViewModelFactory->create(
             $locale,
             'privacy-policy',
         );
@@ -233,15 +233,15 @@ final class PrivacyPolicyViewService
     private function fetchContent(): PrivacyPolicyContentViewModel
     {
         $legalOperator = $this->legalOperatorRepository->find();
-        $protectedOperatorEmail = $this->emailProtector->protect($legalOperator->email);
+        $protectedOperatorEmail = $this->publicEmailProtector->protect($legalOperator->email);
         $operator = new PrivacyPolicyContactViewModel(
             $legalOperator->name,
             $protectedOperatorEmail,
         );
         $recipients = [];
 
-        foreach ($this->recipientRepository->findAll() as $recipient) {
-            $protectedRecipientEmail = $this->emailProtector->protect($recipient->email);
+        foreach ($this->forwardingRecipientRepository->findAll() as $recipient) {
+            $protectedRecipientEmail = $this->publicEmailProtector->protect($recipient->email);
             $contact = new PrivacyPolicyContactViewModel(
                 $recipient->name,
                 $protectedRecipientEmail,
@@ -256,7 +256,7 @@ final class PrivacyPolicyViewService
 final class PrivacyPolicyController
 {
     public function __construct(
-        private PhpRenderer $templates,
+        private PhpRenderer $phpRenderer,
         private PrivacyPolicyViewService $privacyPolicyViewService,
     ) {
     }
@@ -267,7 +267,7 @@ final class PrivacyPolicyController
     ): ResponseInterface {
         $selectedLocale = Locale::from($locale);
         $page = $this->privacyPolicyViewService->fetchPage($selectedLocale);
-        $renderedResponse = $this->templates->render(
+        $renderedResponse = $this->phpRenderer->render(
             $response,
             'privacy-policy.php',
             ['page' => $page],
@@ -291,7 +291,7 @@ final class PrivacyPolicyController
 {
     public function __construct(
         private LegalOperatorRepository $legalOperatorRepository,
-        private ForwardingRecipientRepository $recipientRepository,
+        private ForwardingRecipientRepository $forwardingRecipientRepository,
     ) {
     }
 
@@ -299,9 +299,9 @@ final class PrivacyPolicyController
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        return $this->templates->render($response, 'privacy-policy.php', [
+        return $this->phpRenderer->render($response, 'privacy-policy.php', [
             'operator' => $this->legalOperatorRepository->find(),
-            'recipients' => $this->recipientRepository->findAll(),
+            'recipients' => $this->forwardingRecipientRepository->findAll(),
         ]);
     }
 }
@@ -311,8 +311,8 @@ This service returns only one page fragment and leaves shared component retrieva
 
 ```php
 $content = $this->privacyPolicyViewService->fetchContent();
-$header = $this->siteHeaderFactory->createForLegalPage($locale, 'privacy-policy');
-$legalNavigation = $this->legalNavigationFactory->create($locale, 'privacy-policy');
+$header = $this->siteHeaderViewModelFactory->createForLegalPage($locale, 'privacy-policy');
+$legalNavigation = $this->legalNavigationViewModelFactory->create($locale, 'privacy-policy');
 
 $page = new PrivacyPolicyPageViewModel(
     new PageMetadataViewModel($locale, 'Privacy policy'),

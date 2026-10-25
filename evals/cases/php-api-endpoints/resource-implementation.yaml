@@ -3,6 +3,8 @@
     - apply-skill
   vars:
     skill: file://../php-api-endpoints/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
     additional_skill: file://../php-api-endpoints/references/user-endpoint.md
     project_instructions: |
       This project uses DDD, Slim 4 and Doctrine ORM with entity attributes.
@@ -51,6 +53,8 @@
     - review-code
   vars:
     skill: file://../php-api-endpoints/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
     additional_skill: file://../php-api-endpoints/references/user-endpoint.md
     project_instructions: |
       This DDD API uses directly attribute-mapped Doctrine Project entities,
@@ -101,6 +105,8 @@
     - apply-skill
   vars:
     skill: file://../php-api-endpoints/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
     project_instructions: |
       This existing DDD project uses Slim and explicit Doctrine XML mapping.
       AGENTS.md requires framework-independent domain models and retaining XML
@@ -128,6 +134,8 @@
     - apply-skill
   vars:
     skill: file://../php-api-endpoints/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
     project_instructions: |
       This project does not select DDD or Clean Architecture. Its Slim API has
       existing resource modules, PDO repositories, an input validator, a typed

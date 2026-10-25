@@ -12,20 +12,20 @@
       {
           return new PrivacyPolicyPageViewModel(
               new PageMetadataViewModel($locale, 'Privacy policy'),
-              $this->siteHeaderFactory->createForLegalPage($locale, 'privacy-policy'),
+              $this->siteHeaderViewModelFactory->createForLegalPage($locale, 'privacy-policy'),
               $this->fetchContent(),
-              $this->legalNavigationFactory->create($locale, 'privacy-policy'),
+              $this->legalNavigationViewModelFactory->create($locale, 'privacy-policy'),
           );
       }
   assert:
     - type: regex
       value: '\$metadata\s*=\s*new\s+PageMetadataViewModel'
     - type: regex
-      value: '\$header\s*=\s*\$this->siteHeaderFactory->createForLegalPage'
+      value: '\$header\s*=\s*\$this->siteHeaderViewModelFactory->createForLegalPage'
     - type: regex
       value: '\$content\s*=\s*\$this->fetchContent\(\)'
     - type: regex
-      value: '\$legalNavigation\s*=\s*\$this->legalNavigationFactory->create'
+      value: '\$legalNavigation\s*=\s*\$this->legalNavigationViewModelFactory->create'
     - type: llm-rubric
       value: 'Pass only if each page component is assigned to a semantically named local variable before constructing PrivacyPolicyPageViewModel, the constructor receives those variables instead of inline collaborator calls, and behavior remains unchanged. Fail if repository, service, or factory calls remain nested in the final page constructor or unnecessary helper methods are introduced.'
   metadata:

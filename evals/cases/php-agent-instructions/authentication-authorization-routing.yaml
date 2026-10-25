@@ -3,6 +3,7 @@
     - apply-skill
   vars:
     skill: file://../php-agent-instructions/SKILL.md
+    additional_skill: file://../php-agent-instructions/assets/php-skill-self-review.md
     task: |
       Produce the marked PHP Skill Self Review block for a project instruction
       file. The block must tell agents which skills govern authentication and

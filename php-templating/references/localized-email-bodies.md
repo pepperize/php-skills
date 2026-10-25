@@ -26,12 +26,13 @@ enum EmailBodyTemplate: string
     case AccountEmailVerification = 'account-email-verification';
     case OwnerApprovalApproved = 'owner-approval-approved';
     case OwnerApprovalRejected = 'owner-approval-rejected';
+    case OwnerApprovalCorrectionRequested = 'owner-approval-correction-requested';
     case InquiryAcknowledgment = 'inquiry-acknowledgment';
 }
 
 final class LocalizedEmailBodyRenderer
 {
-    public function __construct(private PhpRenderer $templates)
+    public function __construct(private PhpRenderer $phpRenderer)
     {
     }
 
@@ -48,7 +49,7 @@ final class LocalizedEmailBodyRenderer
         );
         $templateData['locale'] = $locale;
 
-        return $this->templates->fetch($templateName, $templateData);
+        return $this->phpRenderer->fetch($templateName, $templateData);
     }
 }
 
@@ -56,7 +57,7 @@ final class AccountEmailVerificationEmailFactory
 {
     public function __construct(
         private TranslatorInterface $translator,
-        private LocalizedEmailBodyRenderer $emailBodyRenderer,
+        private LocalizedEmailBodyRenderer $localizedEmailBodyRenderer,
     ) {
     }
 
@@ -69,7 +70,7 @@ final class AccountEmailVerificationEmailFactory
             'Verify your email address',
             locale: $locale->value,
         );
-        $textBody = $this->emailBodyRenderer->render(
+        $textBody = $this->localizedEmailBodyRenderer->render(
             EmailBodyTemplate::AccountEmailVerification,
             $locale,
             [
@@ -133,6 +134,10 @@ The purpose-specific factory selects the outcome as a subject message and `Email
         'Your access was rejected',
         EmailBodyTemplate::OwnerApprovalRejected,
     ],
+    ApprovalDecision::RequestCorrection => [
+        'Your access request needs correction',
+        EmailBodyTemplate::OwnerApprovalCorrectionRequested,
+    ],
 };
 ~~~
 
@@ -161,7 +166,7 @@ final readonly class InquiryEmailViewModel
 Pass the model and locale through the shared email-body renderer:
 
 ~~~php
-$textBody = $this->emailBodyRenderer->render(
+$textBody = $this->localizedEmailBodyRenderer->render(
     EmailBodyTemplate::InquiryAcknowledgment,
     $locale,
     ['email' => $emailViewModel],

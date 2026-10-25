@@ -31,18 +31,11 @@ For input-boundary construction and failure handling, follow `php-request-valida
 
 ## Backend Resource Flow
 
-For standard backend resource operations, start with `Controller -> Service -> Repository`, with an optional technical `Client` behind the repository. Derive collaborator names from their responsibilities in this flow:
+For standard resource operations, follow Controller -> Service -> Repository and the DTO/entity boundaries in [API Responsibilities](../php-api-endpoints/SKILL.md#responsibilities). Read its [worked flow](../php-api-endpoints/references/user-endpoint.md#flow-and-naming) when implementing or refactoring these collaborators.
 
-- Controllers adapt HTTP input, call services and complete HTTP responses.
-- Services accept application input DTOs, coordinate the operation and return output DTOs for resource results.
-- Repositories accept entities for persistence and return entities for entity results. Lookups may take identifiers or criteria; request and response DTOs do not cross this boundary.
-- Factories construct entities from input DTOs and output DTOs from entities. Services coordinate these factories around repository calls.
+Name the roles Controller, Service, Repository, and Factory. Another suffix needs a concrete different responsibility, such as middleware, validation, rendering, or technical client communication. Classify the primary responsibility before naming; use [Factories](#factories) for product construction. Preserve explicit project contracts and established ViewService/Renderer names for rendered pages.
 
-Use the corresponding `Controller`, `Service`, `Repository` and `Factory` suffixes. DTO-to-entity and entity-to-DTO construction use `<Product>Factory::create(...)`, rather than a new role name for the same work. A repository implementation may identify its mechanism, such as `DoctrineUserRepository`, while retaining its repository role.
-
-Choose another collaborator suffix only for a concrete different responsibility, such as middleware, validation, rendering or technical client communication. DTOs, entities and other data carriers retain their own names. Preserve explicit project contracts and the established ViewService/Renderer patterns for server-rendered pages.
-
-Read the [worked resource flow and naming examples](../php-api-endpoints/references/user-endpoint.md#flow-and-naming) when implementing or refactoring these collaborators. Classify the architectural role before choosing the name; returning an object alone does not distinguish a service, repository or factory.
+Entities, DTOs, and other data carriers retain their own names. A repository implementation may identify its mechanism while retaining the Repository suffix, such as `DoctrineUserRepository`.
 
 ## Dependency Names
 
@@ -67,9 +60,9 @@ Avoid hiding collaborator results inside the final construction:
 ```php
 return new PrivacyPolicyPageViewModel(
     new PageMetadataViewModel($locale, 'Privacy policy'),
-    $this->siteHeaderFactory->createForLegalPage($locale, 'privacy-policy'),
+    $this->siteHeaderViewModelFactory->createForLegalPage($locale, 'privacy-policy'),
     $this->fetchContent(),
-    $this->legalNavigationFactory->create($locale, 'privacy-policy'),
+    $this->legalNavigationViewModelFactory->create($locale, 'privacy-policy'),
 );
 ```
 
@@ -77,9 +70,9 @@ Keep each meaningful intermediate result visible:
 
 ```php
 $metadata = new PageMetadataViewModel($locale, 'Privacy policy');
-$header = $this->siteHeaderFactory->createForLegalPage($locale, 'privacy-policy');
+$header = $this->siteHeaderViewModelFactory->createForLegalPage($locale, 'privacy-policy');
 $content = $this->fetchContent();
-$legalNavigation = $this->legalNavigationFactory->create($locale, 'privacy-policy');
+$legalNavigation = $this->legalNavigationViewModelFactory->create($locale, 'privacy-policy');
 
 return new PrivacyPolicyPageViewModel(
     $metadata,
@@ -93,19 +86,12 @@ return new PrivacyPolicyPageViewModel(
 
 - Do not use assertion utilities in application, domain, or service code to enforce business conditions.
 - Prefer explicit guard clauses with normal `if` statements and meaningful exceptions.
-- Inside business logic, prefer explicit checks over assertion utilities.
 
 ## Validation Placement
 
-Validate external input only in the input layer. For typical PHP HTTP projects, declare constraints as Symfony attributes on the input DTO and execute them in route middleware using `php-request-validation`. Controllers consume validated input; services, application commands, domain/value-object constructors, repositories, and output code must not repeat field checks.
+Validate external input once at its entry boundary; keep state-dependent business decisions with their owning operation. [Validation Ownership](../php-request-validation/SKILL.md#validation-ownership) owns that distinction, DTO constraints, other entry points, and the prohibition on downstream field revalidation.
 
-Required values, nullness, blank strings, size, syntax, password character composition, allowed input values, nested DTOs, and cross-field input constraints belong there. Do not introduce a policy, predicate, specification, or `Service::validate()` merely to restate those rules or protect hypothetical future callers. CLI, import, job, and external-system inputs are validated at their own entry boundaries.
-
-Use one full-value regex per field when regex is needed, preferably sharing its canonical body with HTML5 `pattern`. Do not split the field's character requirements across regex attributes or downstream `preg_match()` calls. Keep built-in constraints for the rules they express clearly; follow `php-request-validation` and `php-application-security` for sharing and engine safety.
-
-Use a focused custom input validator only when built-in constraints cannot express the input contract clearly; invoke it from the input layer and keep it side-effect free. Leave HTTP mapping to the boundary's existing responder.
-
-Business decisions about permissions, ownership, uniqueness, and lifecycle transitions stay in their owning operation and use explicit guard clauses. Do not classify a stateless field-format check as a business invariant to bypass the input-layer rule. Escape or encode values at their final output context rather than altering validated or stored values.
+For regex-based fields, follow [One Regex Per Field](../php-request-validation/SKILL.md#one-regex-per-field). Preserve accepted values and apply [contextual output handling](../php-application-security/SKILL.md#output-handling) at output.
 
 ## Factories
 
@@ -116,6 +102,8 @@ This names a justified collaborator; it does not require a new class for every c
 Reflection, cloning, metadata interpretation and nested construction are implementation details; they do not justify using `Generator` for an object factory. For example, a collaborator that derives a Symfony `Collection` from DTO metadata is a `DtoConstraintsFactory::create(...)`.
 
 Returning an object alone does not make a class a factory: retrieval, validation and other operations retain their own roles. Preserve explicit user/project naming requirements and framework-required contracts.
+
+For shared presentation factories, a purpose-revealing `createFor...(...)` operation may distinguish a real creation variant, such as `SiteHeaderViewModelFactory::createForLegalPage(...)`.
 
 ## Repository Method Naming
 
@@ -140,12 +128,13 @@ Use these names for supported repository operations, regardless of the storage i
 ## REST API Naming
 
 - For REST resource implementation or refactoring, apply `php-api-endpoints` and read its [worked User endpoint](../php-api-endpoints/references/user-endpoint.md) before editing. It owns the controller/service/DTO/repository implementation pattern.
-- Select conventions by the endpoint's contract. REST resource endpoints, server-rendered page endpoints, and traditional HTML form actions have different naming and response contracts. Neither the HTTP method nor the fact that a browser form exists selects the contract. A server-rendered form submitting to a REST resource endpoint follows REST rules. Read [HTTP endpoint examples](references/http-endpoint-examples.md) before designing or refactoring these boundaries.
+- Select naming by [Endpoint Contracts](../php-api-endpoints/SKILL.md#endpoint-contracts); a rendered form calling a REST endpoint still uses REST names. Read [HTTP endpoint examples](references/http-endpoint-examples.md) before designing or refactoring these boundaries.
 - For new or intentionally redesigned REST endpoints, name resource collections with plural nouns from the domain language. Let the HTTP method express the operation: `POST /api/users` creates a user; `GET /api/users/{userId}` reads a user.
 - Choose the resource actually created or addressed. Do not name a user-creation endpoint after its registration form, controller, or workflow. Use `/api/registrations` only when a registration is itself a domain resource with its own identity and lifecycle.
 - Name REST controllers after the addressed domain resource: `UserController` handles `/api/users`. Controller methods mirror the HTTP verb and route resource, such as `postUsers()` and `getUsers()`. Do not name a REST controller after the registration form or workflow.
 - Name REST request DTOs after the operation and resource with a `Request` suffix: `CreateUserRequest` is the body of `POST /api/users`. Reserve names such as `RegistrationValues` or `UserCreationValues` for traditional form data. A browser form calling a REST API still uses REST request naming.
-- Prefer separate input and output DTOs so accepted input and returned output have independent contracts. Use `CreateUserRequest` for input and output-only `UserDto` for the public resource representation. `UserDto` does not imply shared request/response use. Preserve explicit project response names such as `UserResponse` or `CreateUserResponse` when required. DTOs remain distinct from the domain entity `User`.
+- Name REST validation middleware after the request DTO, such as `CreateUserRequestValidationMiddleware`; use `<FormName>ValidationMiddleware` for traditional form actions.
+- Name independent input/output contracts CreateUserRequest and output-only UserDto under [API Responsibilities](../php-api-endpoints/SKILL.md#responsibilities). UserDto does not imply shared request/response use. Preserve explicit project output names such as UserResponse or CreateUserResponse; DTOs remain distinct from the User entity.
 - For REST resource operations, keep the resource name across the controller, application service, and DTOs: `UserController`, `UserService`, `CreateUserRequest`, and `UserDto`. Use `create`, `read`, `update`, and `delete` for supported CRUD operations; `UserService::create()` creates a User. Do not introduce workflow synonyms such as `RegistrationService::register()` for the same REST resource operation. Add only operations callers need; CRUD naming does not require a generic base service or unused methods.
 - For server-rendered pages, use page ViewServices and Renderers. For traditional HTML form actions, capability names such as `RegistrationService::register()` remain appropriate. Apply the existing submission-flow rules in `php-request-validation`; do not impose REST CRUD names or resource-creation responses on these endpoints. Frontend UI capabilities may also retain workflow names.
 - Treat a request to refactor a REST endpoint according to this skill as including corrections to its route, controller, application-service, and DTO names. Preserve explicitly required compatibility and unrelated API behavior; do not silently exclude naming corrections just because the old names already exist. Update routes, clients, tests, and contract documentation together. Do not add compatibility aliases without a caller or contract that requires them.
@@ -164,11 +153,9 @@ For a REST resource operation that creates a `User`:
 
 ## REST Resource Creation Responses
 
-- For a REST POST that completes resource creation, require all three: `201 Created`, a `Location` header identifying the created resource's canonical member URL, and a response body representing that resource, including its identifier and server-assigned public values. These are this skill collection's conventions; do not describe the mandatory body as an HTTP-standard requirement.
-- The resource service's `create()` accepts the same validated input DTO, coordinates creation and persistence, maps the persisted domain entity through a focused DTO factory, and returns the public resource DTO, such as `UserDto`. The controller passes that DTO to the established response factory or responder; it does not map domain entities. Keep PSR-7 request/response objects, status selection, URL generation, and JSON serialization out of the resource service. The response collaborator generates the member URL and completes the HTTP response.
-- Explicitly select response fields. Never serialize a domain entity wholesale or serialize the submitted input as the response; omit passwords, hashes, bearer tokens, and other secrets. Use the project's existing serializer/responder and response-mapping convention rather than inventing one for the example.
-- Pending verification or another lifecycle state does not make completed resource creation asynchronous. Use `202 Accepted` only for an explicitly asynchronous contract whose processing has not completed. POST actions that do not create a resource and explicitly required existing compatibility contracts retain their own documented responses; flag a conflict with these defaults instead of silently treating it as the normal creation shape.
-- For a traditional HTML form action, retain the HTML contract: render invalid submissions with preserved safe values and the appropriate status, and ordinarily redirect after success with `303 See Other` (Post/Redirect/Get). A server-rendered GET returns HTML from its page ViewModel and renderer. Neither flow requires a JSON resource body or `201` creation response.
+Completed REST resource creation requires 201, the canonical member Location, and a public representation from the persisted entity. [API HTTP Response Contract](../php-api-endpoints/SKILL.md#http-response-contract) owns the complete rule, lifecycle and asynchronous distinctions, secret exclusion, and compatibility exceptions. Keep the controller's DTO-to-response delegation visible during review.
+
+Traditional HTML actions follow [Traditional HTML Submissions](../php-request-validation/SKILL.md#traditional-html-submissions).
 
 ## Method Names
 
@@ -184,6 +171,7 @@ For a REST resource operation that creates a `User`:
 - For REST resource services, keep the CRUD name `read(...)` even when it performs repository I/O. This scoped naming rule takes precedence over `fetch...` guidance. Repository contracts use the read names defined under Repository Method Naming.
 - Outside REST resource services, use `fetch...` for query operations that perform repository, filesystem, network, or other potentially costly I/O. Do not name these operations `get...`, because `get` suggests a cheap accessor.
 - Prefer a purpose-revealing name such as `fetchViewData()` over a generic `fetch()`.
+- Name a page-level ViewService query that performs I/O `fetchPage(...)`.
 - HTTP controller methods may retain names such as `getPrivacyPolicy()` when `get` represents the HTTP verb.
 
 ```php
@@ -222,19 +210,13 @@ Do not add production code only to make tests easier. Avoid test-only constructo
 
 Before finalizing PHP code changes:
 
-- Determine the task's review set with `git status --short` and staged/unstaged diffs. Read task-created untracked PHP files explicitly; `git diff` alone omits them.
-- For every new or renamed class, or class whose responsibility changed, identify its primary responsibility and returned product, if any, from its implementation. Verify the class and main method against the applicable naming rule; fix mismatches in affected dependencies, callers, tests and documentation.
-- For standard resource operations, trace controller DTO input through the service, entity factory, entity repository and output DTO factory. Verify the role suffixes and explain any concrete departure from this flow.
-- Briefly report the role, product and naming decision for newly introduced collaborators.
-- For a non-trivial implementation or refactor, also use `php-solid-review` to review the resulting diff against only the engineering principles that materially apply. Fix meaningful findings before finalizing; do not enumerate principles that have no finding.
-- Review every new or renamed injected dependency and use its declared short type in lower camel case after dropping a trailing `Interface`; preserve all other suffixes.
-- Identify each changed endpoint's contract before reviewing naming and responses. For REST resource endpoints, verify plural domain resource paths, resource-named controllers and application services, CRUD service operations, HTTP/route-aligned handlers, and operation/resource-named request DTOs. Prefer separate request and response DTOs; verify any shared DTO is intentional. Do not carry traditional form `Values` naming into a REST API or force REST naming onto an HTML workflow.
-- For a completed REST resource-creation POST, verify `create()` returns the public DTO mapped from the persisted entity, the controller delegates that DTO to the response collaborator, and the response has `201`, the correct member `Location`, and a body containing its identifier without secrets. For server-rendered pages and traditional HTML form actions, verify their HTML rendering/error/redirect contract instead.
-- Review every newly added or renamed method.
-- Classify each as accessor/property, boolean predicate, action/operation, or factory/construction helper.
-- Accessors may use noun names. Predicates should use `is`, `has`, `can`, `should`, or similar.
-- Action, operation, formatting, mapping, and helper methods must use verb phrases.
-- Remove helper methods that only hide one obvious call unless they enforce a real invariant or improve a repeated concept.
-- Read each changed orchestration method as a sequence of meaningful operations. Extract cohesive details at the operation boundary; do not replace them with many tiny wrappers or require another class without a concrete benefit.
-- Check any new defensive branch against known domain/API assumptions. If the user or project states the value cannot occur, do not add handling for it without asking.
-- Trace changed input paths and remove downstream field revalidation within the requested scope. Verify input DTO attributes run in middleware, and regex-based fields have one regex, preferably shared with HTML5 `pattern`.
+- Review the complete task change set, including task-created untracked PHP files, using git status and staged/unstaged diffs.
+- For every new or renamed class, or class whose responsibility changed, infer its primary responsibility and returned product from its implementation. Apply the naming rules above and correct affected callers, tests, and documentation. Briefly report the role, product, and naming decision for newly introduced collaborators.
+- Check every import alias against [Imports And Aliases](#imports-and-aliases) and every injected dependency against [Dependency Names](#dependency-names).
+- Trace resource operations through the [API responsibility boundaries](../php-api-endpoints/SKILL.md#responsibilities); explain concrete departures.
+- Identify each endpoint contract, then check [REST API Naming](#rest-api-naming) and the [HTTP response contract](../php-api-endpoints/SKILL.md#http-response-contract). Keep rendered-page and HTML-action contracts distinct.
+- Classify every new or renamed method as an accessor, predicate, action, or construction helper under [Method Names](#method-names).
+- Review changed orchestration and helpers under [Orchestration And Local Operations](#orchestration-and-local-operations); remove wrappers that hide an obvious call without a real benefit.
+- Check input paths against [Validation Ownership](../php-request-validation/SKILL.md#validation-ownership) and regex fields against [One Regex Per Field](../php-request-validation/SKILL.md#one-regex-per-field).
+- Check defensive branches against actual domain/API states; ask before handling a value the user or project says cannot occur.
+- Apply [PHP Design Review](../php-solid-review/SKILL.md#implementation-self-review) to non-trivial implementations and refactors, fixing material findings within scope.

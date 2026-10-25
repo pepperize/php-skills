@@ -3,6 +3,9 @@
     - apply-skill
   vars:
     skill: file://../php-request-validation/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     project_instructions: |
       Slim with configured typed controller arguments. Registration must work as
       an ordinary HTML form POST without JavaScript. Existing middleware binds

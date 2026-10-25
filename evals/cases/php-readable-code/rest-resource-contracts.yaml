@@ -3,6 +3,9 @@
     - apply-skill
   vars:
     skill: file://../php-readable-code/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     additional_skill: file://../php-readable-code/references/http-endpoint-examples.md
     project_instructions: |
       This is a synchronous REST API on Slim. POST /api/users creates and persists
@@ -60,6 +63,9 @@
     - review-code
   vars:
     skill: file://../php-readable-code/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     code: |
       // Synchronous REST resource creation; no compatibility constraint exists.
       // register() persists a User and returns void. User contains passwordHash.
@@ -98,6 +104,9 @@
     - apply-skill
   vars:
     skill: file://../php-readable-code/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     task: |
       Name the application services and their methods for two read paths: a
       REST GET /api/users/{userId} returning a User representation, and a PHP-rendered
@@ -125,6 +134,9 @@
     - review-code
   vars:
     skill: file://../php-readable-code/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     code: |
       // Explicit project requirement: ordinary HTML form POST /en/registration,
       // without JavaScript. Middleware validates and binds the typed inputs.
@@ -172,6 +184,9 @@
     - apply-skill
   vars:
     skill: file://../php-readable-code/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     additional_skill: file://../php-readable-code/references/http-endpoint-examples.md
     task: |
       PHP renders GET /en/registration as a complete HTML page. Its form submits
@@ -202,6 +217,9 @@
     - apply-skill
   vars:
     skill: file://../php-readable-code/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
+    presentation_rules: file://../php-templating/SKILL.md
     task: |
       A PHP-rendered contact page has a JavaScript-managed form submitting JSON
       to POST /contact. Its established ContactService::send(ContactFormValues)

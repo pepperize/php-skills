@@ -2,6 +2,8 @@
 
 This reference adapts the Zeitenlogger User endpoint organization into a small `POST /api/users` example. It creates a directory User with `name` and `email`; it is not a complete account-registration implementation. Credentials, verification, legal acceptance and notification rules must come from the target project.
 
+The complete rules belong to [API Responsibilities](../SKILL.md#responsibilities), [REST API Naming](../../php-readable-code/SKILL.md#rest-api-naming), [Request Validation](../../php-request-validation/SKILL.md), and the [HTTP Response Contract](../SKILL.md#http-response-contract). The sections below apply those rules to this example's concrete contracts and stack.
+
 Read the sections needed for the work:
 
 - [Flow and naming](#flow-and-naming)
@@ -37,13 +39,13 @@ UserController::postUsers(CreateUserRequest)
   -> UserResponseFactory::create(UserDto): ResponseInterface
 ```
 
-The service orchestrates the sequence. Its factories own DTO/entity construction; the controller does not receive an entity to translate, and the repository does not accept a request DTO or return a public response DTO. Use `<Product>Factory::create(...)` for these conversions. Mapping fields does not establish a separate `Mapper`, `Converter` or `Generator` role. Returning an object alone does not make the service or repository a factory: their primary responsibilities are application orchestration and persistence/retrieval.
+Here, `UserService` coordinates the sequence, `UserFactory` and `UserDtoFactory` construct its representations, and `UserRepository` persists the entity. Apply [Factories](../../php-readable-code/SKILL.md#factories) and [Backend Resource Flow](../../php-readable-code/SKILL.md#backend-resource-flow) when naming analogous collaborators.
 
 `DoctrineUserRepository::saveAndFlush(User $user): User` is an example of the repository boundary. Doctrine may hydrate entities directly on reads; this flow does not require a second persistence model or an additional factory around ordinary ORM hydration.
 
 When the data source is a remote API, the infrastructure path can be `Service -> Repository -> Client`. The client owns technical communication; the repository returns the application's entity. A factory can construct that entity from the client's transport DTO, while the service still uses its output DTO factory. See the [repository/client example](../../php-ddd-architecture/references/repositories.md#infrastructure-implementations) for this split. Keep factories that consume application DTOs in application code and factories that consume infrastructure transport types in infrastructure; domain repository contracts remain independent of both.
 
-These suffixes name collaborators in the standard flow. Entities, DTOs and other data carriers have their own names. Other collaborator suffixes need a concrete different responsibility, such as `ValidationMiddleware`, `Validator`, `Renderer` or `Client`; explicit project conventions and server-rendered ViewService/Renderer flows remain in place. Add only the operations and collaborators the actual contract needs.
+Keep only the operations and collaborators required by the target endpoint, following the linked responsibility and naming rules.
 
 ## Layout
 

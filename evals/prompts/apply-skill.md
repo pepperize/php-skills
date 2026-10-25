@@ -8,6 +8,23 @@ Additional skill:
 {{ additional_skill }}
 {% endif %}
 
+{% if api_rules %}
+Authoritative API rules:
+{{ api_rules }}
+{% endif %}
+{% if naming_rules %}
+Authoritative naming rules:
+{{ naming_rules }}
+{% endif %}
+{% if validation_rules %}
+Authoritative input rules:
+{{ validation_rules }}
+{% endif %}
+{% if presentation_rules %}
+Authoritative presentation rules:
+{{ presentation_rules }}
+{% endif %}
+
 Task:
 {{ task }}
 

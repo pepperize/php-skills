@@ -25,13 +25,7 @@ Start with the framework's simplest suitable option, and justify additional feat
 
 ## Browser Form Submissions
 
-Default forms to JavaScript-managed submissions using `fetch` or the project's established lightweight mechanism. The browser validates locally before submission and owns displayed feedback and its localization. Follow `php-request-validation` for the request contract and Problem Details handling.
-
-- Prefer native HTML validation attributes and appropriate input types; use their constraint state for frontend-owned messages and add custom client validation only where needed.
-- Preserve entered values while submitting and on validation or network failures. Reset or navigate only after confirmed success.
-- Interpret actionable Problem Details types or codes and relevant field locations to select frontend-owned messages. Use an accessible summary with frontend-owned generic text for unknown or unmatched failures. Never display server `title`, `detail`, or validator messages, even as plain text or fallback copy. Clear stale feedback when corrected or resubmitted.
-- Keep browser feedback separate from authoritative server validation and preserve existing CSRF protection.
-- Use controller-rendered errors for ordinary HTML submissions only when the project or task explicitly requires that flow. Do not introduce a frontend framework or a non-JavaScript fallback without a concrete requirement.
+Follow [Browser Forms](../php-request-validation/SKILL.md#browser-forms): JavaScript-managed submissions, local checks, preserved inputs, and frontend-owned localized feedback. Never display server diagnostic text; use stable server types/codes for feedback selection. Ordinary HTML submissions require an explicit requirement and follow [Traditional HTML Submissions](../php-request-validation/SKILL.md#traditional-html-submissions).
 
 ## Typed Page ViewModels
 
@@ -44,7 +38,9 @@ Every server-rendered page must receive one page-specific ViewModel containing i
 - Use native arrays only for collections and document their element type as `list<SomeViewModel>`.
 - Do not create ViewModels for incidental HTML elements. Model concepts that carry meaningful presentation data or correspond to reusable components.
 - Keep ViewModels free of requests, responses, route parsers, renderers, repositories, domain entities, infrastructure objects, HTML markup, and escaping behavior.
-- In a server-rendered flow with a frontend ViewService, that service returns the complete page-specific ViewModel. The controller must not assemble metadata, content, or shared component ViewModels around a partial service result.
+- In a server-rendered flow with a frontend ViewService, that service returns the complete page-specific ViewModel, coordinating content, metadata, and shared components. The controller adapts typed request values, calls one page ViewService, renders that page, and completes HTTP status and headers; it must not assemble components around a partial result.
+- Keep repository access, domain-to-view mapping, and presentation transformations such as public email protection in the ViewService or a focused collaborator. Pass typed values such as Locale into it, never requests, responses, or renderers.
+- Obtain shared component ViewModels through cohesive presentation collaborators. Apply [Factories](../php-readable-code/SKILL.md#factories) to their names and [Debuggable Composition](../php-readable-code/SKILL.md#debuggable-composition) to intermediate values. For costly page queries, use fetchPage under [Fetching Data](../php-readable-code/SKILL.md#fetching-data).
 - At the page-render boundary, pass one page ViewModel. With `slim/php-view`, use `['page' => $page]`; the array exists only because the framework binds names to template variables.
 - Keep established renderer terminology. A collaborator that renders a template and ViewModel into an HTML response body remains a renderer; do not rename it to a factory merely because rendering creates output.
 - For partials, pass the relevant nested ViewModel plus unavoidable rendering context such as locale or a CSS variant. Do not flatten the component back into scalar or associative-array fields.
@@ -52,7 +48,7 @@ Every server-rendered page must receive one page-specific ViewModel containing i
 Avoid a loose render-data map with nested array shapes:
 
 ```php
-$this->templates->render($response, 'privacy-policy.php', [
+$this->phpRenderer->render($response, 'privacy-policy.php', [
     'locale' => $locale,
     'homeUrl' => $homeUrl,
     'operator' => [
@@ -122,12 +118,12 @@ final class PrivacyPolicyViewService
     public function fetchPage(Locale $locale): PrivacyPolicyPageViewModel
     {
         $metadata = new PageMetadataViewModel($locale, 'Privacy policy');
-        $header = $this->siteHeaderFactory->createForLegalPage(
+        $header = $this->siteHeaderViewModelFactory->createForLegalPage(
             $locale,
             'privacy-policy',
         );
         $content = $this->fetchContent();
-        $legalNavigation = $this->legalNavigationFactory->create(
+        $legalNavigation = $this->legalNavigationViewModelFactory->create(
             $locale,
             'privacy-policy',
         );
@@ -143,7 +139,7 @@ final class PrivacyPolicyViewService
 
 $selectedLocale = Locale::from($locale);
 $page = $this->privacyPolicyViewService->fetchPage($selectedLocale);
-$renderedResponse = $this->templates->render(
+$renderedResponse = $this->phpRenderer->render(
     $response,
     'privacy-policy.php',
     ['page' => $page],

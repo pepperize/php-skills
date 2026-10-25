@@ -7,17 +7,19 @@ description: Applies company PHP application security guidance. Use when adding,
 
 ## Request Validation
 
-Treat external input as untrusted even when browser validation succeeds. Within the backend, validate it only at the input boundary; independent browser validation is appropriate for usability and never authorizes a request. For typical PHP HTTP applications, use Symfony Validator attributes on input DTOs, executed by route middleware before controllers and services. Use `php-request-validation` for hydration, constraints, middleware, and Problem Details.
+Treat external input as untrusted even when browser checks succeed. Validate once at the entry boundary under [Validation Ownership](../php-request-validation/SKILL.md#validation-ownership); keep business-state decisions in their owning operation and avoid downstream field revalidation.
 
-Do not repeat input checks in services, application commands, domain objects, repositories, or output code, or introduce a domain policy merely to recheck email syntax, password composition, lengths, or allowed input values. Other external entry points validate their own input before calling application services. Business decisions about current state, permissions, ownership, uniqueness, and lifecycle transitions remain with the operation that owns them.
+## Output Handling
 
-Validate at input; escape or encode at output for its actual context. Preserve original values in DTOs and storage. Use `php-templating` for HTML output and `php-logging-exceptions` for log encoding; valid input still requires context-appropriate output handling.
+Validate at input; escape or encode at the actual output context. Preserve original values in DTOs and storage rather than pre-escaping them. Valid input still requires context-appropriate output handling.
+
+Use [PHP Templating](../php-templating/SKILL.md#template-engine-and-escaping) for HTML versus plain text, and [Log Safety Review](../php-logging-exceptions/SKILL.md#log-safety-review) for log encoding. Handle JavaScript, CSS, and URL contexts separately when they arise.
 
 ## Regex Safety
 
 Regex is acceptable for validation, but do not use patterns with nested, ambiguous, or repeated repetitions that can cause excessive backtracking or stack overflow for large inputs.
 
-Use one full-value regex per field in the input layer, preferably sharing its canonical body with frontend HTML5 `pattern` as described in `php-request-validation`. Do not split a field rule into multiple regex constraints or repeat it in downstream code. A built-in constraint or deterministic input-layer validator remains preferable when the format cannot be expressed safely by one regex.
+Use the input contract's [One Regex Per Field](../php-request-validation/SKILL.md#one-regex-per-field) rule for placement and frontend sharing; this section owns execution-safety checks.
 
 Treat regexes over external input as security-sensitive, including request URLs, query parameters, selectors, S3 keys, file paths, identifiers, and persisted data entering through an external-data adapter. Validate those values at that input boundary, not again in downstream services.
 

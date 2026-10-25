@@ -3,6 +3,7 @@
     - apply-skill
   vars:
     skill: file://../php-request-validation/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
     project_instructions: |
       The application uses PHP 8.2, Slim 4, and Symfony Validator as a standalone
       component. POST /users accepts JSON objects with required email (string)

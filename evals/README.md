@@ -136,6 +136,8 @@ Promptfoo also supports other providers. Keep provider-specific secrets in envir
 6. Add the smallest PHP snippet that exercises the rule.
 7. Start with deterministic checks. Add `llm-rubric` only for semantic behavior that cannot be asserted robustly with text or regex.
 
+When a case exercises a reminder whose full rule belongs to another skill, load that owner through `api_rules`, `naming_rules`, `validation_rules`, or `presentation_rules` using the same `file://../<skill>/SKILL.md` syntax. Both prompts include these optional variables. Use `additional_skill` for a worked reference or another owner. Include only owners relevant to the case; keep policy text in its source file. Instruction-block cases test routing and concise reminders against the authoritative template; implementation cases test the complete owner contracts.
+
 Eval IDs use this convention:
 
 ```text

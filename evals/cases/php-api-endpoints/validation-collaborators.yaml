@@ -3,6 +3,8 @@
     - apply-skill
   vars:
     skill: file://../php-api-endpoints/SKILL.md
+    naming_rules: file://../php-readable-code/SKILL.md
+    validation_rules: file://../php-request-validation/SKILL.md
     additional_skill: file://../php-api-endpoints/references/user-endpoint.md
     project_instructions: |
       This Slim API follows the worked User organization. The new Project

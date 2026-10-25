@@ -3,6 +3,7 @@
     - apply-skill
   vars:
     skill: file://../php-readable-code/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
     project_instructions: |
       This existing backend has validated CreateInvoiceRequest and output-only
       InvoiceDto types. Its Invoice entity receives an identifier during
@@ -41,6 +42,7 @@
     - apply-skill
   vars:
     skill: file://../php-readable-code/SKILL.md
+    api_rules: file://../php-api-endpoints/SKILL.md
     project_instructions: |
       The existing application reads CatalogEntry resources from a remote API.
       ReadCatalogEntryRequest contains the identifier; CatalogEntry is the
