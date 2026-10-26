@@ -43,6 +43,9 @@ Name each injected dependency after its declared short type, dropping a trailing
 
 ```php
 private MailerInterface $mailer;
+private LoggerInterface $logger;
+private RouteParserInterface $routeParser;
+private EntityManagerInterface $entityManager;
 private UserRepositoryInterface $userRepository;
 private PublicUrlGenerator $publicUrlGenerator;
 private ApartmentLayoutRepository $apartmentLayoutRepository;
