@@ -270,7 +270,7 @@ private function createPayload(Article $article): string
 }
 ```
 
-The public method now stays at workflow level, while the named helper contains the transport-level detail. Input fields are already validated and normalized at the input boundary; the publication policy checks business state, and payload construction preserves the accepted body.
+The public method now stays at workflow level, while the named helper contains the transport-level detail. Input fields are already validated at the input boundary with submitted values unchanged; the publication policy checks business state, and payload construction preserves the accepted body.
 
 ## SRP — Single Responsibility Principle
 

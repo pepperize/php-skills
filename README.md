@@ -12,7 +12,7 @@ Reusable PHP agent skills for applying company engineering standards across PHP 
 - `php-agent-instructions`: installs or updates project-level `AGENTS.md`/`CLAUDE.md` instructions for PHP skill self-review.
 - `php-logging-exceptions`: logging and exception placement guidance for domain-relevant failures and technical boundaries.
 - `php-application-security`: application security guidance for external-input validation and regex safety.
-- [php-request-validation](php-request-validation/SKILL.md): input validation and normalization, DTO sharing and delivery, Problem Details, browser submissions, and regex sharing.
+- [php-request-validation](php-request-validation/SKILL.md): input validation with unchanged submitted values, DTO sharing and delivery, Problem Details, browser submissions, and regex sharing.
 - `php-authentication-security`: secure password authentication, login throttling, recovery and verification tokens, session lifecycle, and Mezzio authentication integration.
 - `php-rbac-authorization`: RBAC authorization guidance for method-local permission attributes, centralized role-to-permission mappings, capability checks, and object-scoped access rules.
 - `php-domain-clarification`: clarification workflow before domain-sensitive implementation changes.

@@ -9,7 +9,7 @@
     project_instructions: |
       This Slim API follows the worked User organization. The new Project
       request has one name field. Existing CreateProjectRequestHydrationResultFactory
-      checks raw shape/types, trims name once and ignores unknown fields. Its
+      checks raw shape/types, preserves name unchanged and ignores unknown fields. Its
       create(array $body) returns CreateProjectRequestHydrationResult, whose
       request is ?CreateProjectRequest and errors are list<CreateProjectRequestError>.
       Existing CreateProjectRequestValidator::validate(CreateProjectRequest)

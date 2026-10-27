@@ -11,7 +11,7 @@ Treat external input as untrusted even when browser checks succeed. Validate onc
 
 ## Output Handling
 
-Validate at input; escape or encode at the actual output context. Preserve original values in DTOs and storage rather than pre-escaping them. Valid input still requires context-appropriate output handling.
+Validate submitted values unchanged; reject invalid values; never trim, sanitize, coerce, or replace them to make validation pass. Escape or encode only at the output context. Preserve original values in DTOs and storage rather than pre-escaping them. Valid input still requires context-appropriate output handling.
 
 Use [PHP Templating](../php-templating/SKILL.md#template-engine-and-escaping) for HTML versus plain text, and [Log Safety Review](../php-logging-exceptions/SKILL.md#log-safety-review) for log encoding. Handle JavaScript, CSS, and URL contexts separately when they arise.
 
@@ -23,6 +23,6 @@ Use the input contract's [One Regex Per Field](../php-request-validation/SKILL.m
 
 Treat regexes over external input as security-sensitive, including request URLs, query parameters, selectors, S3 keys, file paths, identifiers, and persisted data entering through an external-data adapter. Validate those values at that input boundary, not again in downstream services.
 
-When a regex contains repeated groups inside repeated groups, review it for ReDoS or stack-overflow risk before committing. If the safe regex becomes hard to reason about, prefer deterministic validation in the input layer: normalize, split into bounded parts, enforce lengths/counts, and validate characters with simple loops.
+When a regex contains repeated groups inside repeated groups, review it for ReDoS or stack-overflow risk before committing. If the safe regex becomes hard to reason about, prefer deterministic validation in the input layer: inspect bounded parts, enforce lengths/counts, and validate characters with simple loops while preserving the submitted value unchanged.
 
 When replacing or changing a regex flagged by static analysis, add a focused large-invalid-input test.

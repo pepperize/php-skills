@@ -201,7 +201,7 @@ Mit freundlichen Grüßen
 Ihr Team
 ~~~
 
-Do not wrap plain-text values with the HTML escaping helper. The application must still validate or normalize external values according to its input-boundary rules before they reach email composition.
+Do not wrap plain-text values with the HTML escaping helper. The application must still validate external values unchanged at its input boundary before they reach email composition.
 
 ## Verify Recipient-Visible Output
 

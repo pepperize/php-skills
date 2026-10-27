@@ -82,14 +82,14 @@ Each declared class belongs in its own file. `Example` is a replacement namespac
 
 This example uses the following collaborator split to collect raw-input errors across fields and share typed errors with constraint validation:
 
-- `CreateUserRequestHydrationResultFactory` checks raw shape and types, performs permitted normalization once, and constructs the input DTO.
+- `CreateUserRequestHydrationResultFactory` checks raw shape and types and constructs the input DTO with submitted values unchanged.
 - `CreateUserRequestValidator` invokes Symfony Validator and maps violations to typed `CreateUserRequestError` values.
 - `CreateUserRequestValidationMiddleware` coordinates those collaborators, short-circuits errors through `UserResponseFactory`, and attaches the accepted DTO for dispatch.
 - `UserResponseFactory` maps typed errors to the HTTP Problem Details envelope and encoded pointers.
 
-Here the middleware coordinates the existing collaborators without inlining their implementations. These classes are one composition, not a required minimum for every endpoint. For simple hydration owned by one middleware, use a cohesive private construction method as shown in [local DTO construction](../../php-request-validation/references/local-dto-construction.md). Preserve the target contract, including raw-type checks, normalization, extra fields and error accumulation, whichever composition is chosen. The immutable input DTO is also the service parameter; `UserDto` is a separate output type.
+Here the middleware coordinates the existing collaborators without inlining their implementations. These classes are one composition, not a required minimum for every endpoint. For simple hydration owned by one middleware, use a cohesive private construction method as shown in [local DTO construction](../../php-request-validation/references/local-dto-construction.md). Preserve the target contract, including raw-type checks, unchanged submitted values, extra fields and error accumulation, whichever composition is chosen. The immutable input DTO is also the service parameter; `UserDto` is a separate output type.
 
-This two-field illustration preserves the baseline's behavior for those fields: trim the name, trim and lowercase the email, ignore additional fields, and distinguish missing, null and wrong-type values. These are contract choices, not universal normalization or unknown-field policies; preserve the target project's actual contract. Password, locale and legal-document fields are omitted from this generic directory example.
+This two-field illustration preserves submitted names and email addresses unchanged, ignores additional fields, and distinguishes missing, null and wrong-type values. Invalid input is rejected rather than trimmed, lowercased or otherwise repaired. The unknown-field policy is specific to this example; preserve the target project's actual unknown-field contract. Password, locale and legal-document fields are omitted from this generic directory example.
 
 ```php
 <?php
@@ -159,7 +159,7 @@ final readonly class CreateUserRequestHydrationResult
 }
 ```
 
-The hydration factory is adapted from the baseline with only the two supported fields. Raw checks run before constructing the strictly typed DTO; services and domain objects do not repeat these checks or normalization.
+The hydration factory is adapted from the baseline with only the two supported fields. Raw checks run before constructing the strictly typed DTO; submitted values remain unchanged, and services and domain objects do not repeat these checks.
 
 ```php
 <?php
@@ -178,11 +178,9 @@ final class CreateUserRequestHydrationResultFactory
             return new CreateUserRequestHydrationResult(null, $errors);
         }
 
-        $name = trim($requestBody['name']);
-        $email = mb_strtolower(trim($requestBody['email']));
         $createUserRequest = new CreateUserRequest(
-            $name,
-            $email,
+            $requestBody['name'],
+            $requestBody['email'],
         );
 
         return new CreateUserRequestHydrationResult($createUserRequest);
@@ -748,7 +746,7 @@ The canonical member route `users.read` is assumed to exist; its implementation 
 
 Use `php-testing-style` and the real components at the boundaries changed:
 
-- The hydration factory distinguishes missing, null and wrong-type values, normalizes accepted fields exactly once and preserves the declared unknown-field policy. The real attribute-enabled validator returns typed errors for invalid values; the middleware short-circuits either failure without invoking the next handler.
+- The hydration factory distinguishes missing, null and wrong-type values, preserves submitted values unchanged and follows the declared unknown-field policy. The real attribute-enabled validator returns typed errors for invalid values; the middleware short-circuits either failure without invoking the next handler.
 - The parser/protection boundary rejects malformed JSON with 400 and non-object JSON with 422 before validation. Bypassing its stdClass guarantee raises a wiring `LogicException` in validation middleware. The response factory alone serializes typed errors and correctly escapes/encodes pointer segments.
 - Real Slim dispatch delivers the class-keyed request DTO and the controller forwards the same instance. A missing/wrong-type attribute is a wiring `LogicException`, and successive requests do not reuse submitted DTOs.
 - The service maps the entity returned by `saveAndFlush`, not the input request. The real repository loads attribute metadata, assigns an ID, flushes and round-trips stored values.

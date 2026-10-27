@@ -38,7 +38,7 @@ Enforce the new-password policy below, including blocklist checks, at the input 
 - Reject common, expected, context-specific, and known-compromised passwords with a local or privacy-preserving blocklist check. Never send the plaintext password to an external service.
 - Allow password managers, paste, and browser autofill.
 - Do not trim, case-fold, or otherwise silently rewrite passwords.
-- If the application normalizes Unicode, use NFC consistently before the initial hash and every verification. Do not change normalization for existing hashes without a compatible migration strategy.
+- Do not introduce Unicode normalization before hashing or verification. Preserve existing-hash verification compatibility under a documented migration strategy.
 - Treat the complete accepted new password as significant; never silently truncate it.
 - Prefer Argon2id when the deployment supports it and its memory and time cost have been measured on production-like hardware.
 - Choose an algorithm that supports the complete accepted input. Direct bcrypt truncates at 72 bytes and cannot satisfy this Unicode policy for new hashes. If no suitable algorithm is available, report the deployment constraint rather than silently narrowing the policy or truncating input.

@@ -130,6 +130,6 @@ Before finalizing Slim URL-generation changes, search production code and tests 
 
 ## API Boundary Validation
 
-Treat HTTP request shape as a web adapter concern. [Validation Ownership](../php-request-validation/SKILL.md#validation-ownership) owns input-only field checks; [Request DTOs And Hydration](../php-request-validation/SKILL.md#request-dtos-and-hydration) owns shared application DTOs, one-time normalization, and actual contract differences.
+Treat HTTP request shape as a web adapter concern. [Validation Ownership](../php-request-validation/SKILL.md#validation-ownership) owns input-only field checks; [Request DTOs And Hydration](../php-request-validation/SKILL.md#request-dtos-and-hydration) owns shared application DTOs, preservation of submitted values, and actual contract differences.
 
 Keep hydration, validation execution, invocation infrastructure, and error serialization in the web/infrastructure input boundary. Domain objects and services consume validated input; state-dependent business decisions remain with their owning operation.

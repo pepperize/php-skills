@@ -81,7 +81,7 @@ final class FilePrivacyPolicyVersionRepository implements PrivacyPolicyVersionRe
             throw new RuntimeException('The privacy-policy version cannot be read.');
         }
 
-        return new PrivacyPolicyVersion(trim($version));
+        return new PrivacyPolicyVersion($version);
     }
 }
 ```
